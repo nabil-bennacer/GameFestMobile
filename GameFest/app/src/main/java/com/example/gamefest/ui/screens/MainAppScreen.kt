@@ -90,16 +90,12 @@ fun MainAppScreen() {
                     }
 
                     is GameDetailDestination -> NavEntry(destination) {
-                        Column {
-                            Text("Détail du jeu n°${destination.gameId} ")
-                            Button(
-                                onClick = {
-                                    if (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
-                                }
-                            ) {
-                                Text("Retour")
+                        GameDetailScreen(
+                            gameId = destination.gameId,
+                            onBackClick = {
+                                backStack.removeAt(backStack.lastIndex)
                             }
-                        }
+                        )
                     }
 
                     else -> NavEntry(destination) {

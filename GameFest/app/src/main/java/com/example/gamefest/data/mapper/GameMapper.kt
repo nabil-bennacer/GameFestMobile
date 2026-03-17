@@ -12,6 +12,7 @@ fun GameDto.toEntity(): GameEntity {
         imageUrl = this.imageUrl,
         publisherId = this.publisherId,
         maxPlayers = this.maxPlayers
+
     )
 }
 

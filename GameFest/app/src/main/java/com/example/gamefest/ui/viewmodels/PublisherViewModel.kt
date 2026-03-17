@@ -8,17 +8,18 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.gamefest.GameFestApplication
 import com.example.gamefest.data.local.entity.PublisherEntity
 import com.example.gamefest.data.repository.PublisherRepository
+import com.example.gamefest.data.repository.GameRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class PublisherViewModel(
-    private val repository: PublisherRepository
+    private val repositoryPublisher: PublisherRepository,
+    private val repositoryGame: GameRepository
 ) : ViewModel() {
 
-    // L'état de l'écran observé par Jetpack Compose
-    val publishers: StateFlow<List<PublisherEntity>> = repository.getAllPublishers()
+    val publishers: StateFlow<List<PublisherEntity>> = repositoryPublisher.getAllPublishers()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -32,17 +33,22 @@ class PublisherViewModel(
 
     private fun refreshData() {
         viewModelScope.launch {
-            repository.refreshPublishers()
+            repositoryPublisher.refreshPublishers()
+            repositoryGame.refreshGames()
         }
     }
 
-    // L'usine pour créer ce ViewModel en lui injectant le Repository
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as GameFestApplication)
-                val repository = application.container.publisherRepository
-                PublisherViewModel(repository)
+                val pubRepository = application.container.publisherRepository
+                val gameRepository = application.container.gameRepository
+                PublisherViewModel(pubRepository,
+                    gameRepository)
+
+
+
             }
         }
     }

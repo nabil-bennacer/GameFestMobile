@@ -21,8 +21,8 @@ data class GameEntity(
     @PrimaryKey val id: Int,
     val name: String,
     val type: String,
-    val minAge: Int,
+    val minAge: Int?,
     val imageUrl: String?,
-    val publisherId: Int,
-    val maxPlayers: Int
+    val publisherId: Int?,
+    val maxPlayers: Int?
 )
