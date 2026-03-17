@@ -25,7 +25,8 @@ import com.example.gamefest.ui.viewmodels.PublisherViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PublisherScreen(
-    viewModel: PublisherViewModel = viewModel(factory = PublisherViewModel.Factory)
+    viewModel: PublisherViewModel = viewModel(factory = PublisherViewModel.Factory),
+    onPublisherClick: (Int, String) -> Unit = { _, _ -> }
 ) {
     val publisherList by viewModel.publishers.collectAsState()
 
@@ -47,7 +48,12 @@ fun PublisherScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(publisherList) { publisher ->
-                PublisherCard(publisher = publisher)
+                PublisherCard(publisher = publisher,
+                    onClick = {
+                        // Quand on clique, on envoie l'ID et le nom de l'éditeur !
+                        onPublisherClick(publisher.id, publisher.name)
+                    }
+                )
             }
         }
     }
