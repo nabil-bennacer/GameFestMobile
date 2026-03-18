@@ -69,8 +69,15 @@ fun MainAppScreen() {
                     TopLevelDestination.GAMES -> NavEntry(destination) {
                         GameScreen(
                             onGameClick = { gameId ->
-                                // Quand on cliquera sur un jeu, on ira vers l'écran de détails du jeu
                                 backStack.add(GameDetailDestination(gameId))
+                            }
+                        )
+                    }
+
+                    TopLevelDestination.FESTIVALS -> NavEntry(destination) {
+                        FestivalScreen(
+                            onFestivalClick = { festivalId ->
+                                // Optional: add detail screen for festival if needed later
                             }
                         )
                     }
@@ -80,10 +87,9 @@ fun MainAppScreen() {
                             publisherId = destination.publisherId,
                             publisherName = destination.publisherName,
                             onBackClick = {
-                                if(backStack.size > 1) backStack.removeAt(backStack.lastIndex) // Permet de revenir en arrière avec la flèche
+                                if(backStack.size > 1) backStack.removeAt(backStack.lastIndex)
                             },
                             onGameClick = { gameId ->
-                                // On navigue vers le détail du jeu si on clique dessus
                                 backStack.add(GameDetailDestination(gameId))
                             }
                         )
