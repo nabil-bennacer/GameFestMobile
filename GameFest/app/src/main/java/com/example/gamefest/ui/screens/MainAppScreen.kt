@@ -1,28 +1,56 @@
 package com.example.gamefest.ui.screens
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
-import com.example.gamefest.ui.navigation.GameDetailDestination
-import com.example.gamefest.ui.navigation.GamesByPublisherDestination
-import com.example.gamefest.ui.navigation.TopLevelDestination
+import com.example.gamefest.ui.navigation.*
+import com.example.gamefest.ui.viewmodels.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainAppScreen() {
+fun MainAppScreen(
+    authViewModel: AuthViewModel = viewModel(factory = AuthViewModel.Factory)
+) {
+    val currentUser by authViewModel.currentUser.collectAsState()
+    val isCheckingAuth by authViewModel.isCheckingAuth
 
-    // Backstack typé (plus safe)
+    // Backstack initialisé avec PUBLISHERS
     val backStack = remember { mutableStateListOf<Any>(TopLevelDestination.PUBLISHERS) }
+
+    // Cet effet gère la redirection automatique basée sur l'état d'authentification
+    // On n'agit QUE quand isCheckingAuth est false (getProfile() a terminé)
+    LaunchedEffect(isCheckingAuth, currentUser) {
+        if (!isCheckingAuth) {
+            if (currentUser == null &&
+                backStack.lastOrNull() !is LoginDestination &&
+                backStack.lastOrNull() !is RegisterDestination
+            ) {
+                backStack.clear()
+                backStack.add(LoginDestination)
+            }
+        }
+    }
+
+    // Pendant la vérification initiale du cookie, on affiche un loader
+    if (isCheckingAuth) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
 
     val currentDestination = backStack.lastOrNull()
 
     Scaffold(
         bottomBar = {
-            if (currentDestination is TopLevelDestination) {
+            if (currentDestination is TopLevelDestination && currentUser != null) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.primary
@@ -52,7 +80,6 @@ fun MainAppScreen() {
             modifier = Modifier.padding(innerPadding),
             entryProvider = { destination ->
                 when (destination) {
-
                     TopLevelDestination.PUBLISHERS -> NavEntry(destination) {
                         PublisherScreen(
                             onPublisherClick = { publisherId, publisherName ->
@@ -69,10 +96,30 @@ fun MainAppScreen() {
                     TopLevelDestination.GAMES -> NavEntry(destination) {
                         GameScreen(
                             onGameClick = { gameId ->
-                                // Quand on cliquera sur un jeu, on ira vers l'écran de détails du jeu
                                 backStack.add(GameDetailDestination(gameId))
                             }
                         )
+                    }
+
+                    TopLevelDestination.PROFILE -> NavEntry(destination) {
+                        if (currentUser == null) {
+                            LoginScreen(
+                                viewModel = authViewModel,
+                                onRegisterClick = { backStack.add(RegisterDestination) },
+                                onLoginSuccess = { 
+                                    backStack.clear()
+                                    backStack.add(TopLevelDestination.PUBLISHERS)
+                                }
+                            )
+                        } else {
+                            ProfileScreen(
+                                viewModel = authViewModel,
+                                onLogout = { 
+                                    backStack.clear()
+                                    backStack.add(LoginDestination)
+                                }
+                            )
+                        }
                     }
 
                     is GamesByPublisherDestination -> NavEntry(destination) {
@@ -80,10 +127,9 @@ fun MainAppScreen() {
                             publisherId = destination.publisherId,
                             publisherName = destination.publisherName,
                             onBackClick = {
-                                if(backStack.size > 1) backStack.removeAt(backStack.lastIndex) // Permet de revenir en arrière avec la flèche
+                                if(backStack.size > 1) backStack.removeAt(backStack.lastIndex)
                             },
                             onGameClick = { gameId ->
-                                // On navigue vers le détail du jeu si on clique dessus
                                 backStack.add(GameDetailDestination(gameId))
                             }
                         )
@@ -94,6 +140,28 @@ fun MainAppScreen() {
                             gameId = destination.gameId,
                             onBackClick = {
                                 backStack.removeAt(backStack.lastIndex)
+                            }
+                        )
+                    }
+
+                    LoginDestination -> NavEntry(destination) {
+                        LoginScreen(
+                            viewModel = authViewModel,
+                            onRegisterClick = { backStack.add(RegisterDestination) },
+                            onLoginSuccess = {
+                                backStack.clear()
+                                backStack.add(TopLevelDestination.PUBLISHERS)
+                            }
+                        )
+                    }
+
+                    RegisterDestination -> NavEntry(destination) {
+                        RegisterScreen(
+                            viewModel = authViewModel,
+                            onLoginClick = { backStack.removeAt(backStack.lastIndex) },
+                            onRegisterSuccess = {
+                                backStack.clear()
+                                backStack.add(TopLevelDestination.PUBLISHERS)
                             }
                         )
                     }

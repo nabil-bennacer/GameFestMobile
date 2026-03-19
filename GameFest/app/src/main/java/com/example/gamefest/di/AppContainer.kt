@@ -3,10 +3,8 @@ package com.example.gamefest.di
 import android.content.Context
 import com.example.gamefest.data.local.GameFestDatabase
 import com.example.gamefest.data.remote.GameFestApiService
-import com.example.gamefest.data.repository.GameRepository
-import com.example.gamefest.data.repository.GameRepositoryImpl
-import com.example.gamefest.data.repository.PublisherRepository
-import com.example.gamefest.data.repository.PublisherRepositoryImpl
+import com.example.gamefest.data.remote.PersistentCookieJar
+import com.example.gamefest.data.repository.*
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -19,15 +17,18 @@ import javax.net.ssl.X509TrustManager
 interface AppContainer {
     val publisherRepository: PublisherRepository
     val gameRepository: GameRepository
+    val userRepository: UserRepository
+    fun clearCookies()
 }
 
 class DefaultAppContainer(private val context: Context) : AppContainer {
     private val baseUrl = "https://162.38.111.36/api/"
 
+    private val persistentCookieJar = PersistentCookieJar(context)
+
     private val okHttpClient: OkHttpClient by lazy {
-        // 1. Désactivation de la vérification du certificat (Bypass SSL)
         val trustAllCerts = object : X509TrustManager {
-            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {} // dangereux au niveau de la sécurité, on garde ca pour l'instant : à modifier
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
             override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
             override fun getAcceptedIssuers() = arrayOf<X509Certificate>()
         }
@@ -36,22 +37,26 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
             init(null, arrayOf(trustAllCerts), SecureRandom())
         }
 
-        // 2. Intercepteur pour voir les requêtes dans le Logcat (très pratique !)
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
 
         OkHttpClient.Builder()
             .sslSocketFactory(sslContext.socketFactory, trustAllCerts)
-            .hostnameVerifier { _, _ -> true } // Accepte n'importe quel nom de domaine/IP
+            .hostnameVerifier { _, _ -> true }
+            .cookieJar(persistentCookieJar)
             .addInterceptor(logging)
             .build()
+    }
+
+    override fun clearCookies() {
+        persistentCookieJar.clearAll()
     }
 
     private val retrofit: Retrofit = Retrofit.Builder()
         .addConverterFactory(GsonConverterFactory.create())
         .baseUrl(baseUrl)
-        .client(okHttpClient) // On branche notre client modifié
+        .client(okHttpClient)
         .build()
 
     private val retrofitService: GameFestApiService by lazy {
@@ -68,5 +73,9 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
 
     override val gameRepository: GameRepository by lazy {
         GameRepositoryImpl(database.gameDao(), retrofitService)
+    }
+
+    override val userRepository: UserRepository by lazy {
+        UserRepositoryImpl(database.userDao(), retrofitService, persistentCookieJar)
     }
 }
