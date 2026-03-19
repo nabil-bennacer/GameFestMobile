@@ -22,7 +22,8 @@ interface AppContainer {
 }
 
 class DefaultAppContainer(private val context: Context) : AppContainer {
-    private val baseUrl = "https://162.38.111.36/api/"
+//    private val baseUrl = "https://162.38.111.36/api/"
+    private val baseUrl = "https://144.24.192.86/api/"
 
     private val okHttpClient: OkHttpClient by lazy {
         // 1. Désactivation de la vérification du certificat (Bypass SSL)
