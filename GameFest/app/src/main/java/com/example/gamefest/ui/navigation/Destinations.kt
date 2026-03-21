@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.serialization.Serializable
 
@@ -13,6 +14,7 @@ enum class TopLevelDestination(
     val icon: ImageVector,
     val contentDescription: String
 ) {
+    FESTIVALS("Festivals", Icons.Default.Event, "Liste des festivals"),
     PUBLISHERS("Éditeurs", Icons.Default.Business, "Liste des éditeurs"),
     GAMES("Tous les Jeux", Icons.Default.Casino, "Liste de tous les jeux"),
     PROFILE("Profil", Icons.Default.Person, "Mon Profil")
@@ -29,3 +31,4 @@ object LoginDestination
 
 @Serializable
 object RegisterDestination
+

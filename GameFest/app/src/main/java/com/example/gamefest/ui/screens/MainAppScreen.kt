@@ -80,6 +80,13 @@ fun MainAppScreen(
             modifier = Modifier.padding(innerPadding),
             entryProvider = { destination ->
                 when (destination) {
+                    TopLevelDestination.FESTIVALS -> NavEntry(destination) {
+                        FestivalScreen(
+                            onFestivalClick = { festivalId ->
+                                // Optional: add detail screen for festival if needed later
+                            }
+                        )
+                    }
                     TopLevelDestination.PUBLISHERS -> NavEntry(destination) {
                         PublisherScreen(
                             onPublisherClick = { publisherId, publisherName ->
@@ -96,6 +103,7 @@ fun MainAppScreen(
                     TopLevelDestination.GAMES -> NavEntry(destination) {
                         GameScreen(
                             onGameClick = { gameId ->
+                                // Quand on cliquera sur un jeu, on ira vers l'écran de détails du jeu
                                 backStack.add(GameDetailDestination(gameId))
                             }
                         )
@@ -106,7 +114,7 @@ fun MainAppScreen(
                             LoginScreen(
                                 viewModel = authViewModel,
                                 onRegisterClick = { backStack.add(RegisterDestination) },
-                                onLoginSuccess = { 
+                                onLoginSuccess = {
                                     backStack.clear()
                                     backStack.add(TopLevelDestination.PUBLISHERS)
                                 }
@@ -114,7 +122,7 @@ fun MainAppScreen(
                         } else {
                             ProfileScreen(
                                 viewModel = authViewModel,
-                                onLogout = { 
+                                onLogout = {
                                     backStack.clear()
                                     backStack.add(LoginDestination)
                                 }
