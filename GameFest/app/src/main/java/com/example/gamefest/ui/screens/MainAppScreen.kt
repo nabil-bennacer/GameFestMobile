@@ -125,6 +125,9 @@ fun MainAppScreen(
                                 onLogout = {
                                     backStack.clear()
                                     backStack.add(LoginDestination)
+                                },
+                                onNavigateToAdmin = {
+                                    backStack.add(AdminUsersDestination)
                                 }
                             )
                         }
@@ -170,6 +173,14 @@ fun MainAppScreen(
                             onRegisterSuccess = {
                                 backStack.clear()
                                 backStack.add(TopLevelDestination.PUBLISHERS)
+                            }
+                        )
+                    }
+
+                    AdminUsersDestination -> NavEntry(destination) {
+                        AdminUsersScreen(
+                            onBackClick = {
+                                if(backStack.size > 1) backStack.removeAt(backStack.lastIndex)
                             }
                         )
                     }

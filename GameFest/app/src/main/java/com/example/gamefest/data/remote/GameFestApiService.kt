@@ -78,7 +78,7 @@ interface GameFestApiService {
     suspend fun createUserByAdmin(@Body user: UserDto): Response<UserDto>
 
     @PUT("users/admin/{id}/role")
-    suspend fun updateUserRole(@Path("id") id: Int, @Body roleUpdate: Map<String, String>): Response<UserDto>
+    suspend fun updateUserRole(@Path("id") id: Int, @Body roleUpdate: Map<String, String>): Response<AuthResponse>
 
     @DELETE("users/admin/{id}")
     suspend fun deleteUser(@Path("id") id: Int): Response<Unit>

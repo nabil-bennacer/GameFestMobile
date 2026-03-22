@@ -23,7 +23,6 @@ data class AuthResponse(
     val user: UserDto? = null
 )
 
-// Le endpoint GET /api/users/me retourne {"user": {...}}
 data class ProfileResponse(
     val user: UserDto
 )

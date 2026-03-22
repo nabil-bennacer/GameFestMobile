@@ -13,7 +13,8 @@ import com.example.gamefest.ui.viewmodels.AuthViewModel
 @Composable
 fun ProfileScreen(
     viewModel: AuthViewModel,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onNavigateToAdmin: () -> Unit
 ) {
     val currentUser by viewModel.currentUser.collectAsState()
 
@@ -30,7 +31,19 @@ fun ProfileScreen(
             Text(text = "Nom d'utilisateur : ${user.name}")
             Text(text = "Email : ${user.email}")
             Text(text = "Rôle : ${user.role}")
+
             Spacer(modifier = Modifier.height(24.dp))
+
+            if (user.role == "ADMIN") {
+                Button(
+                    onClick = onNavigateToAdmin,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                ) {
+                    Text("Administration des Utilisateurs")
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             Button(
                 onClick = {
                     viewModel.logout()

@@ -94,4 +94,36 @@ class UserRepositoryImpl(
             Result.failure(e)
         }
     }
+
+    override suspend fun getAllUsers(): Result<List<UserDto>> {
+        return try {
+            val response = api.getAllUsers()
+            if (response.isSuccessful) {
+                Result.success(response.body() ?: emptyList())
+            } else {
+                Result.failure(Exception("Erreur de récupération des utilisateurs: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateUserRole(id: Int, role: String): Result<UserDto> {
+        return try {
+            val response = api.updateUserRole(id, mapOf("role" to role))
+            if (response.isSuccessful) {
+                // On extrait l'objet 'user' de 'AuthResponse'
+                val updatedUser = response.body()?.user
+                if (updatedUser != null) {
+                    Result.success(updatedUser)
+                } else {
+                    Result.failure(Exception("Réponse vide lors de la mise à jour du rôle"))
+                }
+            } else {
+                Result.failure(Exception("Erreur de mise à jour du rôle: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

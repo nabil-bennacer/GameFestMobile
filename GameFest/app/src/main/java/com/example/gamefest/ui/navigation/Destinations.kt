@@ -32,3 +32,5 @@ object LoginDestination
 @Serializable
 object RegisterDestination
 
+@Serializable
+object AdminUsersDestination

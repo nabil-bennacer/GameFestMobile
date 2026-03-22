@@ -10,4 +10,7 @@ interface UserRepository {
     suspend fun register(request: RegisterRequest): Result<UserEntity>
     suspend fun logout(): Result<Unit>
     suspend fun getProfile(): Result<UserEntity>
+
+    suspend fun getAllUsers(): Result<List<UserDto>>
+    suspend fun updateUserRole(id: Int, role: String): Result<UserDto>
 }
