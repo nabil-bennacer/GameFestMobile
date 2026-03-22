@@ -10,21 +10,20 @@ activityCompose = "1.8.0"
 composeBom = "2024.09.00"
 foundationLayout = "1.10.0"
 material3 = "1.4.0"
-roomCommonJvm = "2.8.4"
-roomKtx = "2.8.4"
+roomCommonJvm = "2.6.1"
+roomKtx = "2.6.1"
 ksp = "2.0.21-1.0.26"
 room = "2.6.1"
-roomRuntimeJvm = "2.8.4"
+roomRuntimeJvm = "2.6.1"
 runtime = "1.10.0"
 foundation = "1.10.0"
 navigationCompose = "2.9.6"
 ui = "1.10.1"
 nav3Core = "1.0.0-alpha01"
-lifecycleViewmodelNav3 = "2.8.0"
+lifecycleViewmodelNav3 = "2.11.0-alpha02"
 kotlinSerialization = "2.0.21"
 kotlinxSerializationCore = "1.6.3"
 kotlinxSerializationJson = "1.6.0"
-navigation3Ui = "1.0.1"
 retrofit = "2.9.0"
 okhttp = "4.11.0"
 retrofitSerializationConverter = "1.0.0"
@@ -76,7 +75,6 @@ androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "l
 
 # Les icônes pour la BottomBar
 compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
-navigation3-ui = { group = "androidx.navigation3", name = "navigation3-ui", version.ref = "navigation3Ui" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
