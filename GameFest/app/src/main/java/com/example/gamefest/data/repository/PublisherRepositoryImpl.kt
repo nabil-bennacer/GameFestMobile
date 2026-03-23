@@ -49,6 +49,16 @@ class PublisherRepositoryImpl(
         }
     }
 
+    override suspend fun updatePublisher(publisher: PublisherDto) {
+        dao.insertPublisher(publisher.toEntity())
+
+        try {
+            api.updatePublisher(publisher.id, publisher)
+        } catch (e: Exception) {
+            Log.e("PublisherRepository", "Erreur lors de la mise à jour sur la base de données distante", e)
+        }
+    }
+
     // 4. Suppression
     override suspend fun deletePublisher(id: Int) {
         dao.deletePublisherById(id) // Supprime localement

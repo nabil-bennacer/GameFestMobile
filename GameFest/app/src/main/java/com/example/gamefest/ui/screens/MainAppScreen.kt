@@ -12,6 +12,8 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
 import com.example.gamefest.ui.navigation.*
 import com.example.gamefest.ui.viewmodels.AuthViewModel
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,6 +73,20 @@ fun MainAppScreen(
                             label = { Text(destination.label) }
                         )
                     }
+                }
+            }
+        },
+        floatingActionButton = {
+            if (currentDestination == TopLevelDestination.PUBLISHERS) {
+                FloatingActionButton(onClick = {
+                    backStack.add(PublisherEntryDestination)
+                }) {
+                    Icon(Icons.Default.Add, contentDescription = "Ajouter un éditeur")
+                }
+            }
+            else if (currentDestination == TopLevelDestination.GAMES) {
+                FloatingActionButton(onClick = { backStack.add(GameEntryDestination()) }) {
+                    Icon(Icons.Default.Add, contentDescription = "Ajouter un jeu")
                 }
             }
         }
@@ -142,6 +158,12 @@ fun MainAppScreen(
                             },
                             onGameClick = { gameId ->
                                 backStack.add(GameDetailDestination(gameId))
+                            },
+                            onEditClick = {
+                                backStack.add(PublisherEditDestination(destination.publisherId))
+                            },
+                            onAddGameClick = {
+                                backStack.add(GameEntryDestination(preselectedPublisherId = destination.publisherId))
                             }
                         )
                     }
@@ -151,6 +173,9 @@ fun MainAppScreen(
                             gameId = destination.gameId,
                             onBackClick = {
                                 backStack.removeAt(backStack.lastIndex)
+                            },
+                            onEditClick = {
+                                backStack.add(GameEditDestination(destination.gameId))
                             }
                         )
                     }
@@ -182,6 +207,33 @@ fun MainAppScreen(
                             onBackClick = {
                                 if(backStack.size > 1) backStack.removeAt(backStack.lastIndex)
                             }
+                        )
+                    }
+
+                    PublisherEntryDestination -> NavEntry(destination) {
+                        PublisherEntryScreen(
+                            onNavigateUp = { backStack.removeAt(backStack.lastIndex) }
+                        )
+                    }
+
+                    is PublisherEditDestination -> NavEntry(destination) {
+                        PublisherEditScreen(
+                            publisherId = destination.publisherId,
+                            onNavigateUp = { backStack.removeAt(backStack.lastIndex) }
+                        )
+                    }
+
+                    is GameEntryDestination -> NavEntry(destination) {
+                        GameEntryScreen(
+                            preselectedPublisherId = destination.preselectedPublisherId,
+                            onNavigateUp = { backStack.removeAt(backStack.lastIndex) }
+                        )
+                    }
+
+                    is GameEditDestination -> NavEntry(destination) {
+                        GameEditScreen(
+                            gameId = destination.gameId,
+                            onNavigateUp = { backStack.removeAt(backStack.lastIndex) }
                         )
                     }
 
