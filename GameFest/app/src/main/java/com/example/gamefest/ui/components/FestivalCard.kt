@@ -1,39 +1,64 @@
 package com.example.gamefest.ui.components
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.gamefest.data.local.entity.FestivalEntity
 
 @Composable
-fun FestivalCard(festival: FestivalEntity, onClick: () -> Unit = {}) {
+fun FestivalCard(
+    festival: FestivalEntity,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        onClick = onClick
+        modifier = modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = festival.name,
-                style = MaterialTheme.typography.titleLarge
-            )
-            Text(
-                text = "Année : ${festival.year}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            festival.location?.let {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Lieu : $it",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary
+                    text = festival.name,
+                    style = MaterialTheme.typography.titleLarge
                 )
+                festival.location?.let {
+                    Text(
+                        text = "Lieu : $it",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+                if (festival.startDate != null || festival.endDate != null) {
+                    Text(
+                        text = "Du ${festival.startDate ?: "?"} au ${festival.endDate ?: "?"}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+            Row {
+                IconButton(onClick = onEditClick) {
+                    Icon(Icons.Default.Edit, contentDescription = "Modifier")
+                }
+                IconButton(onClick = onDeleteClick) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Supprimer",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }

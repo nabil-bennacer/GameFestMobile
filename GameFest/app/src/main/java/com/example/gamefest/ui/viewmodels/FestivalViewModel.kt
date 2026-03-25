@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.gamefest.GameFestApplication
 import com.example.gamefest.data.local.entity.FestivalEntity
+import com.example.gamefest.data.remote.dto.FestivalDto
 import com.example.gamefest.data.repository.FestivalRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,9 +29,41 @@ class FestivalViewModel(
         refreshData()
     }
 
-    private fun refreshData() {
+    fun refreshData() {
         viewModelScope.launch {
             repository.refreshFestivals()
+        }
+    }
+
+    fun addFestival(name: String, location: String, startDate: String, endDate: String) {
+        viewModelScope.launch {
+            val newFestival = FestivalDto(
+                id = (0..Int.MAX_VALUE).random(), // Temporary ID generation for local
+                name = name,
+                location = location,
+                startDate = startDate,
+                endDate = endDate
+            )
+            repository.addFestival(newFestival)
+        }
+    }
+
+    fun updateFestival(id: Int, name: String, location: String, startDate: String, endDate: String) {
+        viewModelScope.launch {
+            val updatedFestival = FestivalDto(
+                id = id,
+                name = name,
+                location = location,
+                startDate = startDate,
+                endDate = endDate
+            )
+            repository.updateFestival(id, updatedFestival)
+        }
+    }
+
+    fun deleteFestival(id: Int) {
+        viewModelScope.launch {
+            repository.deleteFestival(id)
         }
     }
 

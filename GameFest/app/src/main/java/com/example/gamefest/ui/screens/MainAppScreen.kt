@@ -81,11 +81,7 @@ fun MainAppScreen(
             entryProvider = { destination ->
                 when (destination) {
                     TopLevelDestination.FESTIVALS -> NavEntry(destination) {
-                        FestivalScreen(
-                            onFestivalClick = { festivalId ->
-                                // Optional: add detail screen for festival if needed later
-                            }
-                        )
+                        FestivalScreen()
                     }
                     TopLevelDestination.PUBLISHERS -> NavEntry(destination) {
                         PublisherScreen(
