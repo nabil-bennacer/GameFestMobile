@@ -46,3 +46,4 @@ data class GameEntryDestination(val preselectedPublisherId: Int? = null)
 
 @Serializable
 data class GameEditDestination(val gameId: Int)
+

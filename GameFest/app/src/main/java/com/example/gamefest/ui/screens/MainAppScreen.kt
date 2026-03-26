@@ -24,7 +24,7 @@ fun MainAppScreen(
     val isCheckingAuth by authViewModel.isCheckingAuth
 
     // Backstack initialisé avec PUBLISHERS
-    val backStack = remember { mutableStateListOf<Any>(TopLevelDestination.PUBLISHERS) }
+    val backStack = remember { mutableStateListOf<Any>(TopLevelDestination.FESTIVALS) }
 
     // Cet effet gère la redirection automatique basée sur l'état d'authentification
     // On n'agit QUE quand isCheckingAuth est false (getProfile() a terminé)
@@ -35,7 +35,7 @@ fun MainAppScreen(
                 backStack.lastOrNull() !is RegisterDestination
             ) {
                 backStack.clear()
-                backStack.add(LoginDestination)
+                backStack.add(TopLevelDestination.FESTIVALS)
             }
         }
     }
@@ -52,7 +52,7 @@ fun MainAppScreen(
 
     Scaffold(
         bottomBar = {
-            if (currentDestination is TopLevelDestination && currentUser != null) {
+            if (currentDestination is TopLevelDestination) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.primary
