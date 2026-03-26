@@ -10,5 +10,7 @@ interface PublisherRepository {
 
     suspend fun refreshPublishers()
     suspend fun addPublisher(publisher: PublisherDto)
+
+    suspend fun updatePublisher(publisher: PublisherDto)
     suspend fun deletePublisher(id: Int)
 }

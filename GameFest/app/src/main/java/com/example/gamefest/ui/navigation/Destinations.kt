@@ -34,3 +34,15 @@ object RegisterDestination
 
 @Serializable
 object AdminUsersDestination
+
+@Serializable
+object PublisherEntryDestination
+
+@Serializable
+data class PublisherEditDestination(val publisherId: Int)
+
+@Serializable
+data class GameEntryDestination(val preselectedPublisherId: Int? = null)
+
+@Serializable
+data class GameEditDestination(val gameId: Int)

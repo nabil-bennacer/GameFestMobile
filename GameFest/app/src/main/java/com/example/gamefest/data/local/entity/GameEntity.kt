@@ -18,7 +18,8 @@ import androidx.room.PrimaryKey
     indices = [Index(value = ["publisherId"])]
 )
 data class GameEntity(
-    @PrimaryKey val id: Int,
+    @PrimaryKey (autoGenerate = true)
+    val id: Int = 0,
     val name: String,
     val type: String,
     val minAge: Int?,

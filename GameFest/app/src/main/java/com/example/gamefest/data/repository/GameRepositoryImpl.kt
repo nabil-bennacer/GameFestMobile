@@ -34,8 +34,17 @@ class GameRepositoryImpl(
 
     override suspend fun addGame(game: GameDto) {
         dao.insertGame(game.toEntity())
-        try {
+        try{
             api.createGame(game)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override suspend fun updateGame(game: GameDto) {
+        dao.insertGame(game.toEntity())
+        try {
+            api.updateGame(game.id, game)
         } catch (e: Exception) {
             e.printStackTrace()
         }

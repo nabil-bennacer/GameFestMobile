@@ -11,5 +11,7 @@ interface GameRepository {
 
     suspend fun refreshGames()
     suspend fun addGame(game: GameDto)
+
+    suspend fun updateGame(game: GameDto)
     suspend fun deleteGame(id: Int)
 }

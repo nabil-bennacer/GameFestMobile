@@ -28,6 +28,7 @@ interface PublisherDao {
     @Delete
     suspend fun deletePublisher(publisher: PublisherEntity)
 
+
     @Query("DELETE FROM publishers WHERE id = :id")
     suspend fun deletePublisherById(id: Int)
 }
