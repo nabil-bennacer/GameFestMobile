@@ -40,6 +40,15 @@ class FestivalRepositoryImpl(
         }
     }
 
+    override suspend fun updateFestival(id: Int, festival: FestivalDto) {
+        dao.insertAll(listOf(festival.toEntity()))
+        try {
+            api.updateFestival(id, festival)
+        } catch (e: Exception) {
+            Log.e("FestivalRepository", "Error updating festival to remote", e)
+        }
+    }
+
     override suspend fun deleteFestival(id: Int) {
         dao.deleteFestivalById(id)
         try {

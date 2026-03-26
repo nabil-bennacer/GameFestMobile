@@ -10,5 +10,6 @@ interface FestivalRepository {
 
     suspend fun refreshFestivals()
     suspend fun addFestival(festival: FestivalDto)
+    suspend fun updateFestival(id: Int, festival: FestivalDto)
     suspend fun deleteFestival(id: Int)
 }

@@ -14,8 +14,8 @@ import com.example.gamefest.data.local.entity.PublisherEntity
 import com.example.gamefest.data.local.entity.UserEntity
 
 @Database(
-    entities = [PublisherEntity::class, GameEntity::class, UserEntity::class,FestivalEntity::class],
-    version = 2,
+    entities = [PublisherEntity::class, GameEntity::class, UserEntity::class, FestivalEntity::class],
+    version = 3,
     exportSchema = false
 )
 abstract class GameFestDatabase : RoomDatabase() {

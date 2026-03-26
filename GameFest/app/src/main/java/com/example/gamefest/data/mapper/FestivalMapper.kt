@@ -7,8 +7,9 @@ fun FestivalDto.toEntity(): FestivalEntity {
     return FestivalEntity(
         id = this.id,
         name = this.name,
-        year = this.year,
-        location = this.location
+        location = this.location,
+        startDate = this.startDate,
+        endDate = this.endDate
     )
 }
 
