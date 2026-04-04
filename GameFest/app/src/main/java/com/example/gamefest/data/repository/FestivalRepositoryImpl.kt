@@ -31,13 +31,20 @@ class FestivalRepositoryImpl(
         }
     }
 
-    override suspend fun addFestival(festival: FestivalDto) {
-        dao.insertAll(listOf(festival.toEntity()))
+    override suspend fun addFestival(festival: FestivalDto): FestivalDto? {
         try {
-            api.createFestival(festival)
+            val response = api.createFestival(festival)
+            if (response.isSuccessful) {
+                val createdFestival = response.body()
+                createdFestival?.let {
+                    dao.insertAll(listOf(it.toEntity()))
+                }
+                return createdFestival
+            }
         } catch (e: Exception) {
             Log.e("FestivalRepository", "Error adding festival to remote", e)
         }
+        return null
     }
 
     override suspend fun updateFestival(id: Int, festival: FestivalDto) {

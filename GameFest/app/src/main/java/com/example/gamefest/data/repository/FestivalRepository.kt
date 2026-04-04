@@ -9,7 +9,7 @@ interface FestivalRepository {
     fun getFestivalById(id: Int): Flow<FestivalEntity?>
 
     suspend fun refreshFestivals()
-    suspend fun addFestival(festival: FestivalDto)
+    suspend fun addFestival(festival: FestivalDto): FestivalDto?
     suspend fun updateFestival(id: Int, festival: FestivalDto)
     suspend fun deleteFestival(id: Int)
 }

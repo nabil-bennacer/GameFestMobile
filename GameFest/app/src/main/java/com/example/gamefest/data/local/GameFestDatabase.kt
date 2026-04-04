@@ -4,18 +4,20 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.example.gamefest.data.local.dao.FestivalDao
-import com.example.gamefest.data.local.dao.GameDao
-import com.example.gamefest.data.local.dao.PublisherDao
-import com.example.gamefest.data.local.dao.UserDao
-import com.example.gamefest.data.local.entity.FestivalEntity
-import com.example.gamefest.data.local.entity.GameEntity
-import com.example.gamefest.data.local.entity.PublisherEntity
-import com.example.gamefest.data.local.entity.UserEntity
+import com.example.gamefest.data.local.dao.*
+import com.example.gamefest.data.local.entity.*
 
 @Database(
-    entities = [PublisherEntity::class, GameEntity::class, UserEntity::class, FestivalEntity::class],
-    version = 3,
+    entities = [
+        PublisherEntity::class,
+        GameEntity::class,
+        UserEntity::class,
+        FestivalEntity::class,
+        PriceZoneEntity::class,
+        TableTypeEntity::class,
+        MapZoneEntity::class
+    ],
+    version = 4,
     exportSchema = false
 )
 abstract class GameFestDatabase : RoomDatabase() {
@@ -24,6 +26,7 @@ abstract class GameFestDatabase : RoomDatabase() {
     abstract fun gameDao(): GameDao
     abstract fun userDao(): UserDao
     abstract fun festivalDao(): FestivalDao
+    abstract fun priceZoneDao(): PriceZoneDao
 
     companion object {
         @Volatile

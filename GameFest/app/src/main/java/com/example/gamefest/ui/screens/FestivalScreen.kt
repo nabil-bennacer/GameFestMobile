@@ -18,13 +18,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gamefest.data.local.entity.FestivalEntity
 import com.example.gamefest.ui.components.FestivalCard
 import com.example.gamefest.ui.viewmodels.FestivalViewModel
+import com.example.gamefest.ui.viewmodels.PriceZoneOption
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FestivalScreen(
-    viewModel: FestivalViewModel = viewModel(factory = FestivalViewModel.Factory)
+    viewModel: FestivalViewModel = viewModel(factory = FestivalViewModel.Factory),
+    onFestivalClick: (Int, String) -> Unit = { _, _ -> }
 ) {
     val festivalList by viewModel.festivals.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
@@ -64,6 +66,9 @@ fun FestivalScreen(
                     },
                     onDeleteClick = {
                         viewModel.deleteFestival(festival.id)
+                    },
+                    onClick = {
+                        onFestivalClick(festival.id, festival.name)
                     }
                 )
             }
@@ -73,11 +78,11 @@ fun FestivalScreen(
             FestivalDialog(
                 festival = festivalToEdit,
                 onDismiss = { showDialog = false },
-                onConfirm = { name, location, start, end ->
+                onConfirm = { name, location, start, end, option ->
                     if (festivalToEdit == null) {
-                        viewModel.addFestival(name, location, start, end)
+                        viewModel.addFestival(name, location, start, end, option)
                     } else {
-                        viewModel.updateFestival(festivalToEdit!!.id, name, location, start, end)
+                        viewModel.updateFestival(festivalToEdit!!.id, name, location, start, end, option)
                     }
                     showDialog = false
                 }
@@ -86,16 +91,19 @@ fun FestivalScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FestivalDialog(
     festival: FestivalEntity?,
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String, String) -> Unit
+    onConfirm: (String, String, String, String, PriceZoneOption) -> Unit
 ) {
     var name by remember { mutableStateOf(festival?.name ?: "") }
     var location by remember { mutableStateOf(festival?.location ?: "") }
     var startDate by remember { mutableStateOf(festival?.startDate ?: "") }
     var endDate by remember { mutableStateOf(festival?.endDate ?: "") }
+    var selectedOption by remember { mutableStateOf(PriceZoneOption.STANDARD) }
+    var expanded by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
@@ -194,6 +202,36 @@ fun FestivalDialog(
                     )
                 )
 
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = selectedOption.label,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Option Zones de Prix") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        PriceZoneOption.entries.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option.label) },
+                                onClick = {
+                                    selectedOption = option
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
@@ -202,7 +240,7 @@ fun FestivalDialog(
                         Text("Annuler")
                     }
                     Button(
-                        onClick = { onConfirm(name, location, startDate, endDate) },
+                        onClick = { onConfirm(name, location, startDate, endDate, selectedOption) },
                         enabled = name.isNotBlank()
                     ) {
                         Text("Confirmer")

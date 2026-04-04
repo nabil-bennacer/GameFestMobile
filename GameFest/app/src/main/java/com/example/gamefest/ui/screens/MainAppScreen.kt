@@ -23,11 +23,10 @@ fun MainAppScreen(
     val currentUser by authViewModel.currentUser.collectAsState()
     val isCheckingAuth by authViewModel.isCheckingAuth
 
-    // Backstack initialisé avec PUBLISHERS
+    // Backstack initialisé avec FESTIVALS
     val backStack = remember { mutableStateListOf<Any>(TopLevelDestination.FESTIVALS) }
 
     // Cet effet gère la redirection automatique basée sur l'état d'authentification
-    // On n'agit QUE quand isCheckingAuth est false (getProfile() a terminé)
     LaunchedEffect(isCheckingAuth, currentUser) {
         if (!isCheckingAuth) {
             if (currentUser == null &&
@@ -35,7 +34,7 @@ fun MainAppScreen(
                 backStack.lastOrNull() !is RegisterDestination
             ) {
                 backStack.clear()
-                backStack.add(TopLevelDestination.FESTIVALS)
+                backStack.add(LoginDestination)
             }
         }
     }
@@ -52,7 +51,7 @@ fun MainAppScreen(
 
     Scaffold(
         bottomBar = {
-            if (currentDestination is TopLevelDestination) {
+            if (currentDestination is TopLevelDestination && currentUser != null) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.primary
@@ -77,16 +76,17 @@ fun MainAppScreen(
             }
         },
         floatingActionButton = {
-            if (currentDestination == TopLevelDestination.PUBLISHERS) {
-                FloatingActionButton(onClick = {
-                    backStack.add(PublisherEntryDestination)
-                }) {
-                    Icon(Icons.Default.Add, contentDescription = "Ajouter un éditeur")
-                }
-            }
-            else if (currentDestination == TopLevelDestination.GAMES) {
-                FloatingActionButton(onClick = { backStack.add(GameEntryDestination()) }) {
-                    Icon(Icons.Default.Add, contentDescription = "Ajouter un jeu")
+            if (currentUser != null) {
+                if (currentDestination == TopLevelDestination.PUBLISHERS) {
+                    FloatingActionButton(onClick = {
+                        backStack.add(PublisherEntryDestination)
+                    }) {
+                        Icon(Icons.Default.Add, contentDescription = "Ajouter un éditeur")
+                    }
+                } else if (currentDestination == TopLevelDestination.GAMES) {
+                    FloatingActionButton(onClick = { backStack.add(GameEntryDestination()) }) {
+                        Icon(Icons.Default.Add, contentDescription = "Ajouter un jeu")
+                    }
                 }
             }
         }
@@ -97,7 +97,11 @@ fun MainAppScreen(
             entryProvider = { destination ->
                 when (destination) {
                     TopLevelDestination.FESTIVALS -> NavEntry(destination) {
-                        FestivalScreen()
+                        FestivalScreen(
+                            onFestivalClick = { festivalId, festivalName ->
+                                backStack.add(FestivalDetailDestination(festivalId, festivalName))
+                            }
+                        )
                     }
                     TopLevelDestination.PUBLISHERS -> NavEntry(destination) {
                         PublisherScreen(
@@ -115,7 +119,6 @@ fun MainAppScreen(
                     TopLevelDestination.GAMES -> NavEntry(destination) {
                         GameScreen(
                             onGameClick = { gameId ->
-                                // Quand on cliquera sur un jeu, on ira vers l'écran de détails du jeu
                                 backStack.add(GameDetailDestination(gameId))
                             }
                         )
@@ -128,7 +131,7 @@ fun MainAppScreen(
                                 onRegisterClick = { backStack.add(RegisterDestination) },
                                 onLoginSuccess = {
                                     backStack.clear()
-                                    backStack.add(TopLevelDestination.PUBLISHERS)
+                                    backStack.add(TopLevelDestination.FESTIVALS)
                                 }
                             )
                         } else {
@@ -143,6 +146,16 @@ fun MainAppScreen(
                                 }
                             )
                         }
+                    }
+
+                    is FestivalDetailDestination -> NavEntry(destination) {
+                        FestivalDetailScreen(
+                            festivalId = destination.festivalId,
+                            festivalName = destination.festivalName,
+                            onBackClick = {
+                                backStack.removeAt(backStack.lastIndex)
+                            }
+                        )
                     }
 
                     is GamesByPublisherDestination -> NavEntry(destination) {
@@ -182,7 +195,7 @@ fun MainAppScreen(
                             onRegisterClick = { backStack.add(RegisterDestination) },
                             onLoginSuccess = {
                                 backStack.clear()
-                                backStack.add(TopLevelDestination.PUBLISHERS)
+                                backStack.add(TopLevelDestination.FESTIVALS)
                             }
                         )
                     }
@@ -193,7 +206,7 @@ fun MainAppScreen(
                             onLoginClick = { backStack.removeAt(backStack.lastIndex) },
                             onRegisterSuccess = {
                                 backStack.clear()
-                                backStack.add(TopLevelDestination.PUBLISHERS)
+                                backStack.add(TopLevelDestination.FESTIVALS)
                             }
                         )
                     }

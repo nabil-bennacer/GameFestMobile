@@ -5,12 +5,6 @@ import com.example.gamefest.data.local.GameFestDatabase
 import com.example.gamefest.data.remote.GameFestApiService
 import com.example.gamefest.data.remote.PersistentCookieJar
 import com.example.gamefest.data.repository.*
-import com.example.gamefest.data.repository.FestivalRepository
-import com.example.gamefest.data.repository.FestivalRepositoryImpl
-import com.example.gamefest.data.repository.GameRepository
-import com.example.gamefest.data.repository.GameRepositoryImpl
-import com.example.gamefest.data.repository.PublisherRepository
-import com.example.gamefest.data.repository.PublisherRepositoryImpl
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -24,12 +18,12 @@ interface AppContainer {
     val publisherRepository: PublisherRepository
     val gameRepository: GameRepository
     val userRepository: UserRepository
-    fun clearCookies()
     val festivalRepository: FestivalRepository
+    val priceZoneRepository: PriceZoneRepository
+    fun clearCookies()
 }
 
 class DefaultAppContainer(private val context: Context) : AppContainer {
-//    private val baseUrl = "https://162.38.111.36/api/"
     private val baseUrl = "https://144.24.192.86/api/"
 
     private val persistentCookieJar = PersistentCookieJar(context)
@@ -89,5 +83,9 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
 
     override val festivalRepository: FestivalRepository by lazy {
         FestivalRepositoryImpl(database.festivalDao(), retrofitService)
+    }
+
+    override val priceZoneRepository: PriceZoneRepository by lazy {
+        PriceZoneRepositoryImpl(database.priceZoneDao(), retrofitService)
     }
 }

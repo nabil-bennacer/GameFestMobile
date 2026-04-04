@@ -1,9 +1,6 @@
 package com.example.gamefest.data.remote
 
 import com.example.gamefest.data.remote.dto.*
-import com.example.gamefest.data.remote.dto.FestivalDto
-import com.example.gamefest.data.remote.dto.GameDto
-import com.example.gamefest.data.remote.dto.PublisherDto
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -66,6 +63,19 @@ interface GameFestApiService {
 
     @DELETE("festivals/{id}")
     suspend fun deleteFestival(@Path("id") id: Int): Response<Unit>
+
+    // Price Zones (Matching the pattern used in the web app and other resources)
+    @GET("price_zone/festival/{festivalId}")
+    suspend fun getPriceZonesByFestival(@Path("festivalId") festivalId: Int): Response<List<PriceZoneDto>>
+
+    @POST("price_zone/add")
+    suspend fun createPriceZone(@Body request: PriceZoneRequest): Response<PriceZoneDto>
+
+    @PUT("price_zone/{id}")
+    suspend fun updatePriceZone(@Path("id") id: Int, @Body request: Map<String, Any>): Response<List<PriceZoneDto>>
+
+    @DELETE("price_zone/{id}")
+    suspend fun deletePriceZone(@Path("id") id: Int): Response<Unit>
 
     // Admin Users
     @GET("users/admin/all")

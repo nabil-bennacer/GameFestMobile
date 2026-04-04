@@ -27,6 +27,9 @@ data class GamesByPublisherDestination(val publisherId: Int, val publisherName: 
 data class GameDetailDestination(val gameId: Int)
 
 @Serializable
+data class FestivalDetailDestination(val festivalId: Int, val festivalName: String)
+
+@Serializable
 object LoginDestination
 
 @Serializable
@@ -46,4 +49,3 @@ data class GameEntryDestination(val preselectedPublisherId: Int? = null)
 
 @Serializable
 data class GameEditDestination(val gameId: Int)
-
