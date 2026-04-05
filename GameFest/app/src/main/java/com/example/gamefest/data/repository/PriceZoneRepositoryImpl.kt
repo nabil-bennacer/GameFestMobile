@@ -2,6 +2,7 @@ package com.example.gamefest.data.repository
 
 import android.util.Log
 import com.example.gamefest.data.local.dao.PriceZoneDao
+import com.example.gamefest.data.local.entity.MapZoneEntity
 import com.example.gamefest.data.local.entity.PriceZoneWithDetails
 import com.example.gamefest.data.mapper.toEntity
 import com.example.gamefest.data.remote.GameFestApiService
@@ -16,6 +17,9 @@ class PriceZoneRepositoryImpl(
 
     override fun getPriceZonesForFestival(festivalId: Int): Flow<List<PriceZoneWithDetails>> =
         dao.getPriceZonesForFestival(festivalId)
+
+    override fun getMapZonesByPriceZone(priceZoneId: Int): Flow<List<MapZoneEntity>> =
+        dao.getMapZonesByPriceZone(priceZoneId)
 
     override suspend fun refreshPriceZones(festivalId: Int) {
         try {
@@ -69,6 +73,7 @@ class PriceZoneRepositoryImpl(
                 dao.insertTableTypes(tableDtos.map { it.toEntity() })
             }
             dto.mapZones?.let { mapDtos ->
+                Log.d("PriceZoneRepo", "MapZones for ${dto.name}: $mapDtos")
                 dao.insertMapZones(mapDtos.map { it.toEntity() })
             }
         }

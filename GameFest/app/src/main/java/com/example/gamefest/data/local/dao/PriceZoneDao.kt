@@ -22,6 +22,9 @@ interface PriceZoneDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMapZones(mapZones: List<MapZoneEntity>)
 
+    @Query("SELECT * FROM map_zones WHERE priceZoneId = :priceZoneId")
+    fun getMapZonesByPriceZone(priceZoneId: Int): Flow<List<MapZoneEntity>>
+
     @Query("DELETE FROM price_zones WHERE id = :id")
     suspend fun deletePriceZoneById(id: Int)
 }

@@ -154,6 +154,19 @@ fun MainAppScreen(
                             festivalName = destination.festivalName,
                             onBackClick = {
                                 backStack.removeAt(backStack.lastIndex)
+                            },
+                            onPriceZoneClick = { priceZoneId, priceZoneName ->
+                                backStack.add(MapZoneListDestination(priceZoneId, priceZoneName))
+                            }
+                        )
+                    }
+
+                    is MapZoneListDestination -> NavEntry(destination) {
+                        MapZoneScreen(
+                            priceZoneId = destination.priceZoneId,
+                            priceZoneName = destination.priceZoneName,
+                            onBackClick = {
+                                backStack.removeAt(backStack.lastIndex)
                             }
                         )
                     }

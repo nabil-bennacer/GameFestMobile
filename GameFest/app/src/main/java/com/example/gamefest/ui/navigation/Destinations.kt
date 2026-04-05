@@ -24,6 +24,9 @@ enum class TopLevelDestination(
 data class GamesByPublisherDestination(val publisherId: Int, val publisherName: String)
 
 @Serializable
+data class MapZoneListDestination(val priceZoneId: Int, val priceZoneName: String)
+
+@Serializable
 data class GameDetailDestination(val gameId: Int)
 
 @Serializable

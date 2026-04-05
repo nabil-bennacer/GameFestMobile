@@ -22,7 +22,8 @@ import com.example.gamefest.ui.viewmodels.FestivalDetailViewModel
 fun FestivalDetailScreen(
     festivalId: Int,
     festivalName: String,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onPriceZoneClick: (Int, String) -> Unit
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as GameFestApplication
@@ -71,7 +72,10 @@ fun FestivalDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(priceZones) { zoneWithDetails ->
-                        PriceZoneDetailCard(zoneWithDetails = zoneWithDetails)
+                        PriceZoneDetailCard(
+                            zoneWithDetails = zoneWithDetails,
+                            onClick = { onPriceZoneClick(zoneWithDetails.priceZone.id, zoneWithDetails.priceZone.name) }
+                        )
                     }
                 }
             }
@@ -80,13 +84,19 @@ fun FestivalDetailScreen(
 }
 
 @Composable
-fun PriceZoneDetailCard(zoneWithDetails: PriceZoneWithDetails) {
+fun PriceZoneDetailCard(
+    zoneWithDetails: PriceZoneWithDetails,
+    onClick: () -> Unit
+) {
     val zone = zoneWithDetails.priceZone
     val tableTypes = zoneWithDetails.tableTypes
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        onClick = onClick
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
