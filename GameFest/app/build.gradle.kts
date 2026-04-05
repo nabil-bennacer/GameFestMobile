@@ -73,6 +73,8 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
     implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
 
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
     // Room (CORRIGÉ : utilise les versions compatibles avec Kotlin 2.0)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

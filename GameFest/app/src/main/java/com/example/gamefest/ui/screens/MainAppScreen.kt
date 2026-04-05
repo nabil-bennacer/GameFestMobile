@@ -26,18 +26,17 @@ fun MainAppScreen(
     // Backstack initialisé avec FESTIVALS
     val backStack = remember { mutableStateListOf<Any>(TopLevelDestination.FESTIVALS) }
 
-    // Cet effet gère la redirection automatique basée sur l'état d'authentification
-    LaunchedEffect(isCheckingAuth, currentUser) {
-        if (!isCheckingAuth) {
-            if (currentUser == null &&
-                backStack.lastOrNull() !is LoginDestination &&
-                backStack.lastOrNull() !is RegisterDestination
-            ) {
-                backStack.clear()
-                backStack.add(LoginDestination)
-            }
-        }
-    }
+//    LaunchedEffect(isCheckingAuth, currentUser) {
+//        if (!isCheckingAuth) {
+//            if (currentUser == null &&
+//                backStack.lastOrNull() !is LoginDestination &&
+//                backStack.lastOrNull() !is RegisterDestination
+//            ) {
+//                backStack.clear()
+//                backStack.add(LoginDestination)
+//            }
+//        }
+//    }
 
     // Pendant la vérification initiale du cookie, on affiche un loader
     if (isCheckingAuth) {
@@ -51,7 +50,7 @@ fun MainAppScreen(
 
     Scaffold(
         bottomBar = {
-            if (currentDestination is TopLevelDestination && currentUser != null) {
+            if (currentDestination is TopLevelDestination) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.primary
