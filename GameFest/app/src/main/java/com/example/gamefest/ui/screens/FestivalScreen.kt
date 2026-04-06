@@ -29,12 +29,14 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FestivalScreen(
+    userRole: String? = null,
     viewModel: FestivalViewModel = viewModel(factory = FestivalViewModel.Factory),
     onFestivalClick: (Int, String) -> Unit = { _, _ -> }
 ) {
     val festivalList by viewModel.festivals.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var festivalToEdit by remember { mutableStateOf<FestivalEntity?>(null) }
+    val isAdmin = userRole == "ADMIN" || userRole == "SUPER_ORGANISATOR"
 
     Scaffold(
         topBar = {
@@ -46,11 +48,13 @@ fun FestivalScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                festivalToEdit = null
-                showDialog = true
-            }) {
-                Icon(Icons.Default.Add, contentDescription = "Ajouter un festival")
+            if (isAdmin) {
+                FloatingActionButton(onClick = {
+                    festivalToEdit = null
+                    showDialog = true
+                }) {
+                    Icon(Icons.Default.Add, contentDescription = "Ajouter un festival")
+                }
             }
         }
     ) { paddingValues ->
@@ -73,7 +77,8 @@ fun FestivalScreen(
                     },
                     onClick = {
                         onFestivalClick(festival.id, festival.name)
-                    }
+                    },
+                    isAdmin = isAdmin
                 )
             }
         }
@@ -122,7 +127,7 @@ fun FestivalDialog(
 
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE)
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.FRANCE)
 
     fun showDatePicker(onDateSelected: (String) -> Unit, initialDate: String) {
         val current = try {

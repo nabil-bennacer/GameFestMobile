@@ -101,6 +101,7 @@ fun MainAppScreen(
                 when (destination) {
                     TopLevelDestination.FESTIVALS -> NavEntry(destination) {
                         FestivalScreen(
+                            userRole = currentUser?.role,
                             onFestivalClick = { festivalId, festivalName ->
                                 backStack.add(FestivalDetailDestination(festivalId, festivalName))
                             }
@@ -151,7 +152,7 @@ fun MainAppScreen(
                                 viewModel = authViewModel,
                                 onLogout = {
                                     backStack.clear()
-                                    backStack.add(LoginDestination)
+                                    backStack.add(TopLevelDestination.FESTIVALS)
                                 },
                                 onNavigateToAdmin = {
                                     backStack.add(AdminUsersDestination)

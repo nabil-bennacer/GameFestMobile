@@ -6,7 +6,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.gamefest.GameFestApplication
+import com.example.gamefest.data.local.dao.PriceZoneDao
+import com.example.gamefest.data.local.entity.PublisherEntity
+import com.example.gamefest.data.local.entity.PriceZoneWithDetails
 import com.example.gamefest.data.local.entity.ReservationWithZones
+import com.example.gamefest.data.repository.PublisherRepository
 import com.example.gamefest.data.repository.ReservationRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +18,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class ReservationListViewModel(
-    private val reservationRepository: ReservationRepository
+    private val reservationRepository: ReservationRepository,
+    private val publisherRepository: PublisherRepository,
+    private val priceZoneDao: PriceZoneDao
 ) : ViewModel() {
 
     val reservations: StateFlow<List<ReservationWithZones>> =
@@ -25,9 +31,32 @@ class ReservationListViewModel(
                 initialValue = emptyList()
             )
 
+    val publishers: StateFlow<List<PublisherEntity>> =
+        publisherRepository.getAllPublishers()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
+
+    val priceZonesWithDetails: StateFlow<List<PriceZoneWithDetails>> =
+        priceZoneDao.getAllPriceZones()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
+
+    fun getPublisherName(publisherId: Int): String {
+        return publishers.value.find { it.id == publisherId }?.name ?: "Éditeur #$publisherId"
+    }
+
     init {
         viewModelScope.launch {
             reservationRepository.refreshReservations()
+        }
+        viewModelScope.launch {
+            publisherRepository.refreshPublishers()
         }
     }
 
@@ -36,7 +65,11 @@ class ReservationListViewModel(
             initializer {
                 val application =
                     (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as GameFestApplication)
-                ReservationListViewModel(application.container.reservationRepository)
+                ReservationListViewModel(
+                    application.container.reservationRepository,
+                    application.container.publisherRepository,
+                    application.container.database.priceZoneDao()
+                )
             }
         }
     }

@@ -21,6 +21,7 @@ interface AppContainer {
     val festivalRepository: FestivalRepository
     val priceZoneRepository: PriceZoneRepository
     val reservationRepository: ReservationRepository
+    val database: GameFestDatabase
     fun clearCookies()
 }
 
@@ -66,7 +67,7 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
         retrofit.create(GameFestApiService::class.java)
     }
 
-    private val database: GameFestDatabase by lazy {
+    override val database: GameFestDatabase by lazy {
         GameFestDatabase.getDatabase(context)
     }
 
@@ -83,7 +84,7 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
     }
 
     override val festivalRepository: FestivalRepository by lazy {
-        FestivalRepositoryImpl(database.festivalDao(), retrofitService)
+        FestivalRepositoryImpl(database.festivalDao(), retrofitService, database.priceZoneDao())
     }
 
     override val priceZoneRepository: PriceZoneRepository by lazy {

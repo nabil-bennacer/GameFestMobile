@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.gamefest.data.local.entity.PriceZoneWithDetails
+import com.example.gamefest.data.repository.FestivalRepository
 import com.example.gamefest.data.repository.PriceZoneRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.launch
 
 class FestivalDetailViewModel(
     private val repository: PriceZoneRepository,
+    private val festivalRepository: FestivalRepository,
     private val festivalId: Int
 ) : ViewModel() {
 
@@ -30,6 +32,9 @@ class FestivalDetailViewModel(
 
     fun refreshPriceZones() {
         viewModelScope.launch {
+            // Refresh festivals first — the response contains embedded priceZones with tableTypes
+            festivalRepository.refreshFestivals()
+            // Then refresh price zones specifically for this festival
             repository.refreshPriceZones(festivalId)
         }
     }
@@ -43,10 +48,11 @@ class FestivalDetailViewModel(
     companion object {
         fun provideFactory(
             repository: PriceZoneRepository,
+            festivalRepository: FestivalRepository,
             festivalId: Int
         ): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                FestivalDetailViewModel(repository, festivalId)
+                FestivalDetailViewModel(repository, festivalRepository, festivalId)
             }
         }
     }

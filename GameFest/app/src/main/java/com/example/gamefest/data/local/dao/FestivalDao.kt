@@ -12,8 +12,17 @@ interface FestivalDao {
     @Query("SELECT * FROM festivals WHERE id = :id")
     fun getFestivalById(id: Int): Flow<FestivalEntity?>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(festivals: List<FestivalEntity>)
+    @Update
+    suspend fun updateFestival(festival: FestivalEntity)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertAllIgnore(festivals: List<FestivalEntity>)
+
+    @Transaction
+    suspend fun upsertAll(festivals: List<FestivalEntity>) {
+        insertAllIgnore(festivals)
+        festivals.forEach { updateFestival(it) }
+    }
 
     @Query("DELETE FROM festivals")
     suspend fun deleteAll()

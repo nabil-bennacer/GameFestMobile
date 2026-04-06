@@ -57,6 +57,23 @@ class ReservationEntryViewModel(
     val allGames: StateFlow<List<GameEntity>> = gameRepository.getAllGames()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val filteredGames: List<GameEntity>
+        get() {
+            val pubId = details.publisherId.toIntOrNull()
+            val games = allGames.value
+            return if (pubId != null) games.filter { it.publisherId == pubId } else games
+        }
+    
+    fun getAvailableTables(priceZoneId: Int): Int {
+        val zone = priceZonesWithDetails.find { it.priceZone.id == priceZoneId }
+        return zone?.tableTypes?.sumOf { it.nbAvailable.toInt() } ?: 0
+    }
+
+    fun getTotalTables(priceZoneId: Int): Int {
+        val zone = priceZonesWithDetails.find { it.priceZone.id == priceZoneId }
+        return zone?.tableTypes?.sumOf { it.nbTotal.toInt() } ?: 0
+    }
+
     var priceZonesWithDetails by mutableStateOf<List<PriceZoneWithDetails>>(emptyList())
         private set
 

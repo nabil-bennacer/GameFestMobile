@@ -34,12 +34,13 @@ data class PriceZoneRequest(
     @SerializedName("festival_id") val festivalId: Int,
     val name: String,
     @SerializedName("table_price") val tablePrice: Double,
-    val tableTypes: List<TableTypeRequest>,
-    val mapZoneIds: List<Int>? = null
+    @SerializedName("table_types") val tableTypes: List<TableTypeRequest>,
+    @SerializedName("map_zones") val mapZoneIds: List<Int>? = null
 )
 
 data class TableTypeRequest(
     val name: String,
     @SerializedName("nb_total") val nbTotal: Int,
+    @SerializedName("nb_available") val nbAvailable: Int,
     @SerializedName("nb_total_player") val nbTotalPlayer: Int
 )

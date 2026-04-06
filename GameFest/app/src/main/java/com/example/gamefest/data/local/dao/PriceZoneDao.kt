@@ -13,6 +13,10 @@ interface PriceZoneDao {
     @Query("SELECT * FROM price_zones WHERE festivalId = :festivalId")
     fun getPriceZonesForFestival(festivalId: Int): Flow<List<PriceZoneWithDetails>>
 
+    @Transaction
+    @Query("SELECT * FROM price_zones")
+    fun getAllPriceZones(): Flow<List<PriceZoneWithDetails>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPriceZones(priceZones: List<PriceZoneEntity>)
 

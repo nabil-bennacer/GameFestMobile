@@ -84,7 +84,7 @@ fun ReservationEntryScreen(
             viewModel.details.selectedGames.forEachIndexed { index, gameSelection ->
                 GameBlock(
                     index = index, gameSelection = gameSelection,
-                    allGames = allGames, mapZones = viewModel.allMapZones,
+                    allGames = viewModel.filteredGames, mapZones = viewModel.allMapZones,
                     onGameChanged = { viewModel.updateGame(index, it) }, onRemove = { viewModel.removeGame(index) }
                 )
             }
@@ -118,6 +118,13 @@ fun ReservationEntryScreen(
 
 @Composable
 private fun ZoneBlock(index: Int, zone: ZoneSelection, priceZonesWithDetails: List<PriceZoneWithDetails>, canRemove: Boolean, onZoneChanged: (ZoneSelection) -> Unit, onRemove: () -> Unit) {
+    val selectedZoneId = zone.priceZoneId.toIntOrNull()
+    val selectedZoneDetails = priceZonesWithDetails.find { it.priceZone.id == selectedZoneId }
+    val availableTables = selectedZoneDetails?.tableTypes?.sumOf { it.nbAvailable.toInt() } ?: 0
+    val totalTables = selectedZoneDetails?.tableTypes?.sumOf { it.nbTotal.toInt() } ?: 0
+    val requestedTables = zone.tableCount.toIntOrNull() ?: 0
+    val isOverCapacity = selectedZoneId != null && requestedTables > availableTables
+
     Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -127,14 +134,38 @@ private fun ZoneBlock(index: Int, zone: ZoneSelection, priceZonesWithDetails: Li
                 }
             }
 
-            DropdownSelector("Zone tarifaire *", zone.priceZoneId, priceZonesWithDetails.map { it.priceZone }, { it.id.toString() }, { "${it.name} (${it.tablePrice} €)" }, { onZoneChanged(zone.copy(priceZoneId = it)) })
+            DropdownSelector(
+                "Zone tarifaire *", zone.priceZoneId,
+                priceZonesWithDetails.map { it.priceZone },
+                { it.id.toString() },
+                { pz ->
+                    val zd = priceZonesWithDetails.find { it.priceZone.id == pz.id }
+                    val avail = zd?.tableTypes?.sumOf { it.nbAvailable.toInt() } ?: 0
+                    val total = zd?.tableTypes?.sumOf { it.nbTotal.toInt() } ?: 0
+                    "${pz.name} (${pz.tablePrice} €) — $avail/$total tables"
+                },
+                { onZoneChanged(zone.copy(priceZoneId = it)) }
+            )
 
             OutlinedTextField(
                 value = zone.tableCount,
                 onValueChange = { newValue -> onZoneChanged(zone.copy(tableCount = newValue.filter { it.isDigit() })) },
                 label = { Text("Nombre de tables *") },
+                supportingText = if (selectedZoneId != null) {
+                    { Text("$availableTables tables disponibles sur $totalTables") }
+                } else null,
+                isError = isOverCapacity,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth(), singleLine = true
             )
+
+            if (isOverCapacity) {
+                Text(
+                    text = "⚠️ Attention : vous demandez $requestedTables tables mais seulement $availableTables sont disponibles !",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

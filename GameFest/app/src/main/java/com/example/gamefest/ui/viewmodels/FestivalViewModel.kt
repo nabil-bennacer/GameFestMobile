@@ -68,8 +68,7 @@ class FestivalViewModel(
             val createdFestival = festivalRepository.addFestival(newFestivalDto)
             
             if (createdFestival != null) {
-                Log.d("FestivalVM", "Festival created: ${createdFestival.id}. Initializing zones...")
-                createPriceZonesForFestival(createdFestival.id, priceZoneOption,tablesCount)
+                Log.d("FestivalVM", "Festival created: ${createdFestival.id}")
                 festivalRepository.refreshFestivals()
             } else {
                 Log.e("FestivalVM", "Failed to create festival")
@@ -77,39 +76,7 @@ class FestivalViewModel(
         }
     }
 
-    private suspend fun createPriceZonesForFestival(festivalId: Int, option: PriceZoneOption,tablesCount: Int) {
-        val stdTables = if (option == PriceZoneOption.BOTH) (tablesCount + 1) / 2 else tablesCount
-        val vipTables = if (option == PriceZoneOption.BOTH) tablesCount / 2 else tablesCount
 
-
-        val stdTableTypes = listOf(TableTypeRequest("STANDARD", stdTables.toInt(), 4))
-        val vipTableTypes = listOf(TableTypeRequest("STANDARD", vipTables.toInt(), 4))
-
-        try {
-            when (option) {
-                PriceZoneOption.STANDARD -> {
-                    priceZoneRepository.createPriceZone(
-                        PriceZoneRequest(festivalId, "Standard", 10.0, stdTableTypes)
-                    )
-                }
-                PriceZoneOption.VIP -> {
-                    priceZoneRepository.createPriceZone(
-                        PriceZoneRequest(festivalId, "VIP", 25.0, vipTableTypes)
-                    )
-                }
-                PriceZoneOption.BOTH -> {
-                    priceZoneRepository.createPriceZone(
-                        PriceZoneRequest(festivalId, "Standard", 10.0, stdTableTypes)
-                    )
-                    priceZoneRepository.createPriceZone(
-                        PriceZoneRequest(festivalId, "VIP", 25.0, vipTableTypes)
-                    )
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("FestivalVM", "Error creating price zones", e)
-        }
-    }
 
     fun updateFestival(
         id: Int,
@@ -131,24 +98,6 @@ class FestivalViewModel(
                 tablesCount = tablesCount
             )
             festivalRepository.updateFestival(id, updatedFestival)
-            
-            // Sync price zones
-            val existingZones = priceZoneRepository.getPriceZonesForFestival(id).first()
-            val hasStandard = existingZones.any { it.priceZone.name.contains("Standard", ignoreCase = true) }
-            val hasVip = existingZones.any { it.priceZone.name.contains("VIP", ignoreCase = true) }
-
-            when (priceZoneOption) {
-                PriceZoneOption.STANDARD -> if (!hasStandard) createPriceZonesForFestival(id, PriceZoneOption.STANDARD,tablesCount)
-                PriceZoneOption.VIP -> if (!hasVip) createPriceZonesForFestival(id, PriceZoneOption.VIP,tablesCount)
-                PriceZoneOption.BOTH -> {
-                    if (!hasStandard && !hasVip) {
-                        createPriceZonesForFestival(id, PriceZoneOption.BOTH, tablesCount)
-                    } else {
-                        if (!hasStandard) createPriceZonesForFestival(id, PriceZoneOption.STANDARD, (tablesCount + 1) / 2)
-                        if (!hasVip) createPriceZonesForFestival(id, PriceZoneOption.VIP, tablesCount / 2)
-                    }
-                }
-            }
             festivalRepository.refreshFestivals()
         }
     }

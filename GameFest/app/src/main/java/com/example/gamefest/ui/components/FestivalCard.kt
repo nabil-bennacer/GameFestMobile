@@ -42,7 +42,8 @@ fun FestivalCard(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isAdmin: Boolean = false
 ) {
     Card(
         modifier = modifier
@@ -76,16 +77,18 @@ fun FestivalCard(
                     )
                 }
             }
-            Row {
-                IconButton(onClick = onEditClick) {
-                    Icon(Icons.Default.Edit, contentDescription = "Modifier")
-                }
-                IconButton(onClick = onDeleteClick) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Supprimer",
-                        tint = MaterialTheme.colorScheme.error
-                    )
+            if (isAdmin) {
+                Row {
+                    IconButton(onClick = onEditClick) {
+                        Icon(Icons.Default.Edit, contentDescription = "Modifier")
+                    }
+                    IconButton(onClick = onDeleteClick) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Supprimer",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         }

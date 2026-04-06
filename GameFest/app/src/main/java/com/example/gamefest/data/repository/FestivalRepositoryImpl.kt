@@ -2,16 +2,19 @@ package com.example.gamefest.data.repository
 
 import android.util.Log
 import com.example.gamefest.data.local.dao.FestivalDao
+import com.example.gamefest.data.local.dao.PriceZoneDao
 import com.example.gamefest.data.local.entity.FestivalEntity
 import com.example.gamefest.data.mapper.toEntity
 import com.example.gamefest.data.mapper.toEntityList
 import com.example.gamefest.data.remote.GameFestApiService
 import com.example.gamefest.data.remote.dto.FestivalDto
+import com.example.gamefest.data.remote.dto.PriceZoneDto
 import kotlinx.coroutines.flow.Flow
 
 class FestivalRepositoryImpl(
     private val dao: FestivalDao,
-    private val api: GameFestApiService
+    private val api: GameFestApiService,
+    private val priceZoneDao: PriceZoneDao
 ) : FestivalRepository {
 
     override fun getAllFestivals(): Flow<List<FestivalEntity>> = dao.getAllFestivals()
@@ -23,7 +26,13 @@ class FestivalRepositoryImpl(
             val response = api.getAllFestivals()
             if (response.isSuccessful) {
                 response.body()?.let { dtos ->
-                    dao.insertAll(dtos.toEntityList())
+                    dao.upsertAll(dtos.toEntityList())
+                    // Also save any embedded priceZones
+                    dtos.forEach { festival ->
+                        festival.priceZones?.let { zones ->
+                            savePriceZonesLocally(zones)
+                        }
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -37,9 +46,15 @@ class FestivalRepositoryImpl(
             if (response.isSuccessful) {
                 val createdFestival = response.body()
                 createdFestival?.let {
-                    dao.insertAll(listOf(it.toEntity()))
+                    dao.upsertAll(listOf(it.toEntity()))
+                    // Save embedded priceZones from creation response
+                    it.priceZones?.let { zones ->
+                        savePriceZonesLocally(zones)
+                    }
                 }
                 return createdFestival
+            } else {
+                Log.e("FestivalRepository", "Create failed: ${response.code()} ${response.errorBody()?.string()}")
             }
         } catch (e: Exception) {
             Log.e("FestivalRepository", "Error adding festival to remote", e)
@@ -48,9 +63,17 @@ class FestivalRepositoryImpl(
     }
 
     override suspend fun updateFestival(id: Int, festival: FestivalDto) {
-        dao.insertAll(listOf(festival.toEntity()))
+        dao.updateFestival(festival.toEntity())
         try {
-            api.updateFestival(id, festival)
+            val response = api.updateFestival(id, festival)
+            if (response.isSuccessful) {
+                response.body()?.let {
+                    dao.upsertAll(listOf(it.toEntity()))
+                    it.priceZones?.let { zones ->
+                        savePriceZonesLocally(zones)
+                    }
+                }
+            }
         } catch (e: Exception) {
             Log.e("FestivalRepository", "Error updating festival to remote", e)
         }
@@ -62,6 +85,18 @@ class FestivalRepositoryImpl(
             api.deleteFestival(id)
         } catch (e: Exception) {
             Log.e("FestivalRepository", "Error deleting festival from remote", e)
+        }
+    }
+
+    private suspend fun savePriceZonesLocally(dtos: List<PriceZoneDto>) {
+        priceZoneDao.insertPriceZones(dtos.map { it.toEntity() })
+        dtos.forEach { dto ->
+            dto.tableTypes?.let { tableDtos ->
+                priceZoneDao.insertTableTypes(tableDtos.map { it.toEntity() })
+            }
+            dto.mapZones?.let { mapDtos ->
+                priceZoneDao.insertMapZones(mapDtos.map { it.toEntity() })
+            }
         }
     }
 }

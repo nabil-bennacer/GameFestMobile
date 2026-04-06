@@ -25,5 +25,6 @@ data class GameEntity(
     val minAge: Int?,
     val imageUrl: String?,
     val publisherId: Int?,
-    val maxPlayers: Int?
+    val maxPlayers: Int?,
+    val description: String? = null
 )

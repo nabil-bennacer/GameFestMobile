@@ -32,6 +32,7 @@ fun FestivalDetailScreen(
     val viewModel: FestivalDetailViewModel = viewModel(
         factory = FestivalDetailViewModel.provideFactory(
             application.container.priceZoneRepository,
+            application.container.festivalRepository,
             festivalId
         )
     )

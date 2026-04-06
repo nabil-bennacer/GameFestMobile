@@ -59,7 +59,12 @@ fun ReservationListScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(reservations) { reservationWithZones ->
-                    ReservationCard(reservationWithZones)
+                    val pzDetails by viewModel.priceZonesWithDetails.collectAsState()
+                    ReservationCard(
+                        reservationWithZones = reservationWithZones,
+                        publisherName = viewModel.getPublisherName(reservationWithZones.reservation.publisherId),
+                        priceZonesWithDetails = pzDetails
+                    )
                 }
             }
         }
@@ -67,7 +72,11 @@ fun ReservationListScreen(
 }
 
 @Composable
-private fun ReservationCard(reservationWithZones: ReservationWithZones) {
+private fun ReservationCard(
+    reservationWithZones: ReservationWithZones,
+    publisherName: String,
+    priceZonesWithDetails: List<com.example.gamefest.data.local.entity.PriceZoneWithDetails>
+) {
     val reservation = reservationWithZones.reservation
     val zones = reservationWithZones.zones
 
@@ -94,22 +103,31 @@ private fun ReservationCard(reservationWithZones: ReservationWithZones) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Éditeur ID: ${reservation.publisherId}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                text = "Festival ID: ${reservation.festivalId}",
-                style = MaterialTheme.typography.bodyMedium
+                text = "📦 $publisherName",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
             )
 
             if (zones.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(8.dp))
+
+                zones.forEach { zone ->
+                    val zoneName = priceZonesWithDetails.find { it.priceZone.id == zone.priceZoneId }?.priceZone?.name ?: "Zone #${zone.priceZoneId}"
+                    Text(
+                        text = "🎯 $zoneName : ${zone.tableCount} table(s)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "${zones.size} zone(s) réservée(s) — ${zones.sumOf { it.tableCount }} table(s)",
+                    text = "Total : ${zones.sumOf { it.tableCount }} table(s)",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
