@@ -9,7 +9,9 @@ fun FestivalDto.toEntity(): FestivalEntity {
         name = this.name,
         location = this.location,
         startDate = this.startDate,
-        endDate = this.endDate
+        endDate = this.endDate,
+        tablesCount = this.tablesCount ?: 0,
+        priceZoneTypeId = this.priceZoneTypeId ?:0
     )
 }
 

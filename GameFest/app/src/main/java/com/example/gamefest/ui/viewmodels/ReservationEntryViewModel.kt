@@ -9,34 +9,31 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.gamefest.GameFestApplication
-import com.example.gamefest.data.local.entity.MapZoneEntity
-import com.example.gamefest.data.local.entity.PriceZoneEntity
-import com.example.gamefest.data.local.entity.PriceZoneWithDetails
-import com.example.gamefest.data.local.entity.PublisherEntity
-import com.example.gamefest.data.local.entity.FestivalEntity
-import com.example.gamefest.data.remote.dto.ReservationDto
-import com.example.gamefest.data.remote.dto.ZoneReservationDto
-import com.example.gamefest.data.repository.FestivalRepository
-import com.example.gamefest.data.repository.PriceZoneRepository
-import com.example.gamefest.data.repository.PublisherRepository
-import com.example.gamefest.data.repository.ReservationRepository
+import com.example.gamefest.data.local.entity.*
+import com.example.gamefest.data.remote.dto.*
+import com.example.gamefest.data.repository.*
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-// --- Data classes pour l'état du formulaire ---
-
 data class ZoneSelection(
     val priceZoneId: String = "",
-    val mapZoneId: String = "",
     val tableCount: String = ""
+)
+
+data class GameSelection(
+    val gameId: String = "",
+    val mapZoneId: String = "",
+    val allocatedTables: String = "1",
+    val copyCount: String = "1"
 )
 
 data class ReservationDetails(
     val publisherId: String = "",
     val festivalId: String = "",
-    val selectedZones: List<ZoneSelection> = listOf(ZoneSelection())
+    val selectedZones: List<ZoneSelection> = listOf(ZoneSelection()),
+    val selectedGames: List<GameSelection> = emptyList()
 )
 
 class ReservationEntryViewModel(
@@ -44,34 +41,33 @@ class ReservationEntryViewModel(
     private val publisherRepository: PublisherRepository,
     private val festivalRepository: FestivalRepository,
     private val priceZoneRepository: PriceZoneRepository,
+    private val gameRepository: GameRepository,
     initialFestivalId: Int? = null
 ) : ViewModel() {
 
-    var details by mutableStateOf(
-        ReservationDetails(
-            festivalId = initialFestivalId?.toString() ?: ""
-        )
-    )
+    var details by mutableStateOf(ReservationDetails(festivalId = initialFestivalId?.toString() ?: ""))
         private set
 
-    val publishers: StateFlow<List<PublisherEntity>> =
-        publisherRepository.getAllPublishers()
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val publishers: StateFlow<List<PublisherEntity>> = publisherRepository.getAllPublishers()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val festivals: StateFlow<List<FestivalEntity>> =
-        festivalRepository.getAllFestivals()
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val festivals: StateFlow<List<FestivalEntity>> = festivalRepository.getAllFestivals()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val allGames: StateFlow<List<GameEntity>> = gameRepository.getAllGames()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     var priceZonesWithDetails by mutableStateOf<List<PriceZoneWithDetails>>(emptyList())
         private set
 
+    val allMapZones: List<MapZoneEntity>
+        get() = priceZonesWithDetails.flatMap { it.mapZones }
+
     init {
         viewModelScope.launch { publisherRepository.refreshPublishers() }
         viewModelScope.launch { festivalRepository.refreshFestivals() }
-        // Si un festivalId initial est fourni, charger les zones
-        if (initialFestivalId != null) {
-            loadPriceZones(initialFestivalId)
-        }
+        viewModelScope.launch { gameRepository.refreshGames() }
+        if (initialFestivalId != null) loadPriceZones(initialFestivalId)
     }
 
     fun updatePublisher(publisherId: String) {
@@ -81,14 +77,11 @@ class ReservationEntryViewModel(
     fun updateFestival(festivalId: String) {
         details = details.copy(
             festivalId = festivalId,
-            selectedZones = listOf(ZoneSelection()) // reset les zones
+            selectedZones = listOf(ZoneSelection()),
+            selectedGames = emptyList()
         )
         val id = festivalId.toIntOrNull()
-        if (id != null) {
-            loadPriceZones(id)
-        } else {
-            priceZonesWithDetails = emptyList()
-        }
+        if (id != null) loadPriceZones(id) else priceZonesWithDetails = emptyList()
     }
 
     private fun loadPriceZones(festivalId: Int) {
@@ -107,13 +100,7 @@ class ReservationEntryViewModel(
             details = details.copy(selectedZones = updatedZones)
         }
     }
-
-    fun addZone() {
-        details = details.copy(
-            selectedZones = details.selectedZones + ZoneSelection()
-        )
-    }
-
+    fun addZone() { details = details.copy(selectedZones = details.selectedZones + ZoneSelection()) }
     fun removeZone(index: Int) {
         if (details.selectedZones.size > 1) {
             val updatedZones = details.selectedZones.toMutableList()
@@ -122,62 +109,88 @@ class ReservationEntryViewModel(
         }
     }
 
+    fun updateGame(index: Int, game: GameSelection) {
+        val updatedGames = details.selectedGames.toMutableList()
+        if (index in updatedGames.indices) {
+            updatedGames[index] = game
+            details = details.copy(selectedGames = updatedGames)
+        }
+    }
+    fun addGame() { details = details.copy(selectedGames = details.selectedGames + GameSelection()) }
+    fun removeGame(index: Int) {
+        val updatedGames = details.selectedGames.toMutableList()
+        updatedGames.removeAt(index)
+        details = details.copy(selectedGames = updatedGames)
+    }
+
     val totalPrice: Double
         get() {
             val priceZoneMap = priceZonesWithDetails.associate { it.priceZone.id to it.priceZone.tablePrice }
             return details.selectedZones.sumOf { zone ->
                 val priceZoneId = zone.priceZoneId.toIntOrNull()
                 val tableCount = zone.tableCount.toIntOrNull() ?: 0
-                val unitPrice = priceZoneMap[priceZoneId] ?: 0.0
-                unitPrice * tableCount
+                (priceZoneMap[priceZoneId] ?: 0.0) * tableCount
             }
         }
-
-    fun getFilteredMapZones(priceZoneId: String): List<MapZoneEntity> {
-        val id = priceZoneId.toIntOrNull() ?: return emptyList()
-        return priceZonesWithDetails
-            .firstOrNull { it.priceZone.id == id }
-            ?.mapZones ?: emptyList()
-    }
 
     val isFormValid: Boolean
         get() {
             if (details.publisherId.isBlank() || details.festivalId.isBlank()) return false
-            return details.selectedZones.all { zone ->
-                zone.priceZoneId.isNotBlank() &&
-                zone.tableCount.isNotBlank() &&
-                (zone.tableCount.toIntOrNull() ?: 0) > 0
+            val zonesValid = details.selectedZones.all {
+                it.priceZoneId.isNotBlank() && it.tableCount.isNotBlank() && (it.tableCount.toIntOrNull() ?: 0) > 0
             }
+            val gamesValid = details.selectedGames.all {
+                it.gameId.isNotBlank() && it.allocatedTables.isNotBlank()
+            }
+            return zonesValid && gamesValid
         }
 
-    suspend fun saveReservation() {
+    fun saveReservation() {
         if (!isFormValid) return
 
-        val dto = ReservationDto(
-            gamePublisherId = details.publisherId.toIntOrNull(),
-            festivalId = details.festivalId.toInt(),
-            tables = details.selectedZones.map { zone ->
-                ZoneReservationDto(
-                    priceZoneId = zone.priceZoneId.toInt(),
-                    tableCount = zone.tableCount.toInt()
-                )
-            }
-        )
-        reservationRepository.saveReservation(dto)
+        viewModelScope.launch {
+            val publisherIdInt = details.publisherId.toInt()
+
+            val dto = ReservationDto(
+                reservationId = 0,
+                reservantId = publisherIdInt,
+                gamePublisherId = publisherIdInt,
+                festivalId = details.festivalId.toInt(),
+                status = "CONFIRMED",
+                invoiceStatus = "PENDING",
+                zones = details.selectedZones.map { zone ->
+                    ZoneReservationDto(
+                        id = 0, reservationId = 0,
+                        priceZoneId = zone.priceZoneId.toInt(),
+                        tableCount = zone.tableCount.toInt()
+                    )
+                },
+                games = details.selectedGames.map { game ->
+                    FestivalGameDto(
+                        gameId = game.gameId.toInt(),
+                        mapZoneId = game.mapZoneId.toIntOrNull(),
+                        copyCount = game.copyCount.toIntOrNull() ?: 1,
+                        allocatedTables = game.allocatedTables.toFloatOrNull() ?: 1f
+                    )
+                }
+            )
+
+            reservationRepository.saveReservation(dto)
+            // Rafraîchir les données pour mettre à jour les tables restantes
+            priceZoneRepository.refreshPriceZones(details.festivalId.toInt())
+        }
     }
 
     companion object {
-        fun provideFactory(
-            initialFestivalId: Int? = null
-        ): ViewModelProvider.Factory = viewModelFactory {
+        fun provideFactory(initialFestivalId: Int? = null): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                val application =
-                    (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as GameFestApplication)
+                val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as GameFestApplication)
                 ReservationEntryViewModel(
                     reservationRepository = application.container.reservationRepository,
                     publisherRepository = application.container.publisherRepository,
                     festivalRepository = application.container.festivalRepository,
                     priceZoneRepository = application.container.priceZoneRepository,
+                    gameRepository = application.container.gameRepository,
                     initialFestivalId = initialFestivalId
                 )
             }

@@ -86,7 +86,15 @@ fun FestivalScreen(
                     if (festivalToEdit == null) {
                         viewModel.addFestival(name, location, start, end, tables, option)
                     } else {
-                        viewModel.updateFestival(festivalToEdit!!.id, name, location, start, end, tables, option)
+                        viewModel.updateFestival(
+                            festivalToEdit!!.id,
+                            name,
+                            location,
+                            start,
+                            end,
+                            tables,
+                            option
+                        )
                     }
                     showDialog = false
                 }
@@ -177,7 +185,6 @@ fun FestivalDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-                // ----------------------------------------------
 
                 OutlinedTextField(
                     value = startDate,

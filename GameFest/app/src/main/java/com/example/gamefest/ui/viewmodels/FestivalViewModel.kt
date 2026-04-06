@@ -52,6 +52,7 @@ class FestivalViewModel(
         location: String,
         startDate: String,
         endDate: String,
+        tablesCount: Int,
         priceZoneOption: PriceZoneOption
     ) {
         viewModelScope.launch {
@@ -61,7 +62,8 @@ class FestivalViewModel(
                 location = location,
                 startDate = startDate,
                 endDate = endDate,
-                priceZoneTypeId = priceZoneOption.id
+                priceZoneTypeId = priceZoneOption.id,
+                tablesCount = tablesCount
             )
             val createdFestival = festivalRepository.addFestival(newFestivalDto)
             
@@ -120,6 +122,7 @@ class FestivalViewModel(
         location: String,
         startDate: String,
         endDate: String,
+        tablesCount: Int,
         priceZoneOption: PriceZoneOption
     ) {
         viewModelScope.launch {
@@ -129,7 +132,8 @@ class FestivalViewModel(
                 location = location,
                 startDate = startDate,
                 endDate = endDate,
-                priceZoneTypeId = priceZoneOption.id
+                priceZoneTypeId = priceZoneOption.id,
+                tablesCount = tablesCount
             )
             festivalRepository.updateFestival(id, updatedFestival)
             

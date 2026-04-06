@@ -15,140 +15,100 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.gamefest.data.local.entity.FestivalEntity
+import com.example.gamefest.data.local.entity.GameEntity
 import com.example.gamefest.data.local.entity.MapZoneEntity
 import com.example.gamefest.data.local.entity.PriceZoneWithDetails
-import com.example.gamefest.data.local.entity.PublisherEntity
+import com.example.gamefest.ui.viewmodels.GameSelection
 import com.example.gamefest.ui.viewmodels.ReservationEntryViewModel
 import com.example.gamefest.ui.viewmodels.ZoneSelection
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReservationEntryScreen(
     festivalId: Int? = null,
     onNavigateUp: () -> Unit,
-    viewModel: ReservationEntryViewModel = viewModel(
-        factory = ReservationEntryViewModel.provideFactory(festivalId)
-    )
+    viewModel: ReservationEntryViewModel = viewModel(factory = ReservationEntryViewModel.provideFactory(festivalId))
 ) {
-    val coroutineScope = rememberCoroutineScope()
     val publishers by viewModel.publishers.collectAsState()
     val festivals by viewModel.festivals.collectAsState()
+    val allGames by viewModel.allGames.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Nouvelle Réservation") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateUp) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Retour"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
+                navigationIcon = { IconButton(onClick = onNavigateUp) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Retour") } },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
             )
         }
     ) { innerPadding ->
         Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+            modifier = Modifier.padding(innerPadding).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
             DropdownSelector(
-                label = "Éditeur *",
-                selectedValue = viewModel.details.publisherId,
-                items = publishers,
-                itemToId = { it.id.toString() },
-                itemToLabel = { it.name },
-                onItemSelected = { viewModel.updatePublisher(it) }
+                label = "Festival *", selectedValue = viewModel.details.festivalId, items = festivals,
+                itemToId = { it.id.toString() }, itemToLabel = { it.name },
+                onItemSelected = { viewModel.updateFestival(it) }, enabled = festivalId == null
             )
 
             DropdownSelector(
-                label = "Festival *",
-                selectedValue = viewModel.details.festivalId,
-                items = festivals,
-                itemToId = { it.id.toString() },
-                itemToLabel = { it.name },
-                onItemSelected = { viewModel.updateFestival(it) },
-                enabled = festivalId == null // Désactivé si pré-sélectionné
+                label = "Éditeur / Réservant *", selectedValue = viewModel.details.publisherId, items = publishers,
+                itemToId = { it.id.toString() }, itemToLabel = { it.name },
+                onItemSelected = { viewModel.updatePublisher(it) }
             )
 
             HorizontalDivider()
 
-            Text(
-                text = "Zones de réservation",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Text("Facturation", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
 
             viewModel.details.selectedZones.forEachIndexed { index, zone ->
                 ZoneBlock(
-                    index = index,
-                    zone = zone,
-                    priceZonesWithDetails = viewModel.priceZonesWithDetails,
-                    filteredMapZones = viewModel.getFilteredMapZones(zone.priceZoneId),
+                    index = index, zone = zone, priceZonesWithDetails = viewModel.priceZonesWithDetails,
                     canRemove = viewModel.details.selectedZones.size > 1,
-                    onZoneChanged = { updatedZone -> viewModel.updateZone(index, updatedZone) },
-                    onRemove = { viewModel.removeZone(index) }
+                    onZoneChanged = { viewModel.updateZone(index, it) }, onRemove = { viewModel.removeZone(index) }
                 )
             }
-
-            TextButton(
-                onClick = { viewModel.addZone() },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("+ Ajouter une autre zone")
-            }
+            TextButton(onClick = { viewModel.addZone() }, modifier = Modifier.fillMaxWidth()) { Text("+ Ajouter une zone tarifaire") }
 
             HorizontalDivider()
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+
+            Text("Placement des Jeux", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+
+            if (viewModel.details.selectedGames.isEmpty()) {
+                Text("Vous pouvez placer des jeux maintenant ou plus tard.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            viewModel.details.selectedGames.forEachIndexed { index, gameSelection ->
+                GameBlock(
+                    index = index, gameSelection = gameSelection,
+                    allGames = allGames, mapZones = viewModel.allMapZones,
+                    onGameChanged = { viewModel.updateGame(index, it) }, onRemove = { viewModel.removeGame(index) }
                 )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Total estimé",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = String.format("%.2f €", viewModel.totalPrice),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+            }
+            TextButton(onClick = { viewModel.addGame() }, modifier = Modifier.fillMaxWidth()) { Text("+ Placer un jeu") }
+
+            HorizontalDivider()
+
+
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text("Total estimé", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(String.format("%.2f €", viewModel.totalPrice), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
                 }
             }
 
             Button(
                 onClick = {
-                    coroutineScope.launch {
-                        viewModel.saveReservation()
-                        onNavigateUp()
-                    }
+                    viewModel.saveReservation()
+                    onNavigateUp()
                 },
                 enabled = viewModel.isFormValid,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Valider la réservation")
+                Text("Confirmer la réservation")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -156,132 +116,81 @@ fun ReservationEntryScreen(
     }
 }
 
-
 @Composable
-private fun ZoneBlock(
-    index: Int,
-    zone: ZoneSelection,
-    priceZonesWithDetails: List<PriceZoneWithDetails>,
-    filteredMapZones: List<MapZoneEntity>,
-    canRemove: Boolean,
-    onZoneChanged: (ZoneSelection) -> Unit,
-    onRemove: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Zone ${index + 1}",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
-                )
+private fun ZoneBlock(index: Int, zone: ZoneSelection, priceZonesWithDetails: List<PriceZoneWithDetails>, canRemove: Boolean, onZoneChanged: (ZoneSelection) -> Unit, onRemove: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("Tarif ${index + 1}", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                 if (canRemove) {
-                    IconButton(onClick = onRemove) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Supprimer cette zone",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
+                    IconButton(onClick = onRemove) { Icon(Icons.Default.Delete, "Supprimer", tint = MaterialTheme.colorScheme.error) }
                 }
             }
 
-            // Dropdown PriceZone
-            DropdownSelector(
-                label = "Zone tarifaire *",
-                selectedValue = zone.priceZoneId,
-                items = priceZonesWithDetails.map { it.priceZone },
-                itemToId = { it.id.toString() },
-                itemToLabel = { "${it.name} (${it.tablePrice} €/table)" },
-                onItemSelected = { priceZoneId ->
-                    // Quand on change de PriceZone, on reset la MapZone
-                    onZoneChanged(zone.copy(priceZoneId = priceZoneId, mapZoneId = ""))
-                }
-            )
+            DropdownSelector("Zone tarifaire *", zone.priceZoneId, priceZonesWithDetails.map { it.priceZone }, { it.id.toString() }, { "${it.name} (${it.tablePrice} €)" }, { onZoneChanged(zone.copy(priceZoneId = it)) })
 
-            // Dropdown MapZone (filtré par PriceZone)
-            DropdownSelector(
-                label = "Zone plan",
-                selectedValue = zone.mapZoneId,
-                items = filteredMapZones,
-                itemToId = { it.id.toString() },
-                itemToLabel = { it.name },
-                onItemSelected = { mapZoneId ->
-                    onZoneChanged(zone.copy(mapZoneId = mapZoneId))
-                },
-                enabled = zone.priceZoneId.isNotBlank()
-            )
-
-            // Champ nombre de tables
             OutlinedTextField(
                 value = zone.tableCount,
-                onValueChange = { newValue ->
-                    val filtered = newValue.filter { it.isDigit() }
-                    onZoneChanged(zone.copy(tableCount = filtered))
-                },
+                onValueChange = { newValue -> onZoneChanged(zone.copy(tableCount = newValue.filter { it.isDigit() })) },
                 label = { Text("Nombre de tables *") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth(), singleLine = true
             )
         }
     }
 }
 
+@Composable
+private fun GameBlock(index: Int, gameSelection: GameSelection, allGames: List<GameEntity>, mapZones: List<MapZoneEntity>, onGameChanged: (GameSelection) -> Unit, onRemove: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("Jeu ${index + 1}", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                IconButton(onClick = onRemove) { Icon(Icons.Default.Delete, "Supprimer", tint = MaterialTheme.colorScheme.error) }
+            }
+
+            DropdownSelector("Sélectionner un jeu *", gameSelection.gameId, allGames, { it.id.toString() }, { it.name }, { onGameChanged(gameSelection.copy(gameId = it)) })
+
+            val mapOptions = listOf(Pair("", "Non placé")) + mapZones.map { Pair(it.id.toString(), it.name) }
+            DropdownSelectorPair("Zone Plan", gameSelection.mapZoneId, mapOptions) { onGameChanged(gameSelection.copy(mapZoneId = it)) }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = gameSelection.allocatedTables,
+                    onValueChange = { onGameChanged(gameSelection.copy(allocatedTables = it)) },
+                    label = { Text("Tables (ex: 0.5)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f), singleLine = true
+                )
+                OutlinedTextField(
+                    value = gameSelection.copyCount,
+                    onValueChange = { onGameChanged(gameSelection.copy(copyCount = it.filter { c -> c.isDigit() })) },
+                    label = { Text("Exemplaires") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f), singleLine = true
+                )
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun <T> DropdownSelector(
-    label: String,
-    selectedValue: String,
-    items: List<T>,
-    itemToId: (T) -> String,
-    itemToLabel: (T) -> String,
-    onItemSelected: (String) -> Unit,
-    enabled: Boolean = true
-) {
+private fun <T> DropdownSelector(label: String, selectedValue: String, items: List<T>, itemToId: (T) -> String, itemToLabel: (T) -> String, onItemSelected: (String) -> Unit, enabled: Boolean = true) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedLabel = items.firstOrNull { itemToId(it) == selectedValue }
-        ?.let { itemToLabel(it) } ?: ""
+    val selectedLabel = items.firstOrNull { itemToId(it) == selectedValue }?.let { itemToLabel(it) } ?: ""
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { if (enabled) expanded = !expanded }) {
+        OutlinedTextField(value = selectedLabel, onValueChange = {}, readOnly = true, enabled = enabled, label = { Text(label) }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }, modifier = Modifier.menuAnchor().fillMaxWidth())
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            items.forEach { item -> DropdownMenuItem(text = { Text(itemToLabel(item)) }, onClick = { onItemSelected(itemToId(item)); expanded = false }) }
+        }
+    }
+}
 
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { if (enabled) expanded = !expanded }
-    ) {
-        OutlinedTextField(
-            value = selectedLabel,
-            onValueChange = {},
-            readOnly = true,
-            enabled = enabled,
-            label = { Text(label) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .menuAnchor()
-                .fillMaxWidth()
-        )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            items.forEach { item ->
-                DropdownMenuItem(
-                    text = { Text(itemToLabel(item)) },
-                    onClick = {
-                        onItemSelected(itemToId(item))
-                        expanded = false
-                    }
-                )
-            }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DropdownSelectorPair(label: String, selectedValue: String, items: List<Pair<String, String>>, onItemSelected: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = items.firstOrNull { it.first == selectedValue }?.second ?: ""
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+        OutlinedTextField(value = selectedLabel, onValueChange = {}, readOnly = true, label = { Text(label) }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }, modifier = Modifier.menuAnchor().fillMaxWidth())
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            items.forEach { item -> DropdownMenuItem(text = { Text(item.second) }, onClick = { onItemSelected(item.first); expanded = false }) }
         }
     }
 }

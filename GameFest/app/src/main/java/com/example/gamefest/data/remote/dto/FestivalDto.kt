@@ -6,5 +6,6 @@ data class FestivalDto(
     val location: String?,
     val startDate: String?,
     val endDate: String?,
+    val tablesCount: Int? = null,
     val priceZoneTypeId: Int? = null
 )
