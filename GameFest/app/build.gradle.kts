@@ -78,6 +78,8 @@ dependencies {
     // Room (CORRIGÉ : utilise les versions compatibles avec Kotlin 2.0)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.foundation)
+    implementation(libs.play.services.games)
     ksp(libs.androidx.room.compiler)
 
     // Tests

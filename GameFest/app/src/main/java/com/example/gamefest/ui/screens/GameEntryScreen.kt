@@ -29,6 +29,9 @@ fun GameEntryScreen(
     val coroutineScope = rememberCoroutineScope()
     val publisherList by viewModel.publisherList.collectAsState()
 
+    // On récupère la liste des types de jeux
+    val gameTypes by viewModel.gameTypes.collectAsState()
+
     LaunchedEffect(preselectedPublisherId) {
         preselectedPublisherId?.let { id ->
             viewModel.preselectPublisher(id)
@@ -50,7 +53,8 @@ fun GameEntryScreen(
     ) { innerPadding ->
         GameEntryBody(
             gameUiState = viewModel.gameUiState,
-            publishers = publisherList, // NOUVEAU : On passe la liste au corps de l'écran
+            publishers = publisherList,
+            gameTypes = gameTypes,
             onGameValueChange = viewModel::updateUiState,
             onSaveClick = {
                 coroutineScope.launch {
@@ -70,6 +74,7 @@ fun GameEntryScreen(
 fun GameEntryBody(
     gameUiState: GameUiState,
     publishers: List<PublisherEntity>,
+    gameTypes: List<String>,
     onGameValueChange: (GameDetails) -> Unit,
     onSaveClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -80,7 +85,8 @@ fun GameEntryBody(
     ) {
         GameInputForm(
             gameDetails = gameUiState.gameDetails,
-            publishers = publishers, // NOUVEAU
+            publishers = publishers,
+            gameTypes = gameTypes,
             onValueChange = onGameValueChange
         )
 
@@ -98,12 +104,15 @@ fun GameEntryBody(
 @Composable
 fun GameInputForm(
     gameDetails: GameDetails,
-    publishers: List<PublisherEntity>, // NOUVEAU
+    publishers: List<PublisherEntity>,
+    gameTypes : List<String>,
     modifier: Modifier = Modifier,
     onValueChange: (GameDetails) -> Unit = {}
 ) {
     // Variable pour savoir si la liste déroulante est ouverte ou fermée
     var expanded by remember { mutableStateOf(false) }
+
+    var expandedType by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier,
@@ -117,13 +126,35 @@ fun GameInputForm(
             singleLine = true
         )
 
-        OutlinedTextField(
-            value = gameDetails.type,
-            onValueChange = { onValueChange(gameDetails.copy(type = it)) },
-            label = { Text("Type (ex: Stratégie, Ambiance) *") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
+        ExposedDropdownMenuBox(
+            expanded = expandedType,
+            onExpandedChange = { expandedType = !expandedType }
+        ) {
+            OutlinedTextField(
+                value = gameDetails.type,
+                onValueChange = {}, // Lecture seule
+                readOnly = true,
+                label = { Text("Catégorie du jeu *") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedType) },
+                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                modifier = Modifier.menuAnchor().fillMaxWidth()
+            )
+
+            ExposedDropdownMenu(
+                expanded = expandedType,
+                onDismissRequest = { expandedType = false }
+            ) {
+                gameTypes.forEach { typeOption ->
+                    DropdownMenuItem(
+                        text = { Text(typeOption) },
+                        onClick = {
+                            onValueChange(gameDetails.copy(type = typeOption))
+                            expandedType = false
+                        }
+                    )
+                }
+            }
+        }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(

@@ -15,6 +15,7 @@ import com.example.gamefest.data.repository.GameRepository
 import com.example.gamefest.data.repository.PublisherRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 class GameEntryViewModel(
@@ -34,6 +35,18 @@ class GameEntryViewModel(
                 initialValue = emptyList() // Liste vide le temps que ça charge
             )
 
+    val gameTypes: StateFlow<List<String>> = gameRepository.getAllGames()
+        .map { games ->
+            games.map { it.type } // On prend juste le champ "type" de chaque jeu
+                .distinct()      // On supprime les doublons
+                .filter { it.isNotBlank() } // On ignore les jeux qui n'ont pas de type
+                .sorted()        //  On trie par ordre alphabétique
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
     fun updateUiState(gameDetails: GameDetails) {
         gameUiState = GameUiState(
             gameDetails = gameDetails,

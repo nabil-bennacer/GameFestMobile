@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -31,6 +32,19 @@ class GameEditViewModel(
     // On récupère aussi la liste des éditeurs pour la liste déroulante
     val publisherList: StateFlow<List<PublisherEntity>> = publisherRepository.getAllPublishers()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val gameTypes: StateFlow<List<String>> = gameRepository.getAllGames()
+        .map { games ->
+            games.map { it.type }
+                .distinct()
+                .filter { it.isNotBlank() }
+                .sorted()
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     // 1. Charger les données du jeu
     fun loadGame(gameId: Int) {

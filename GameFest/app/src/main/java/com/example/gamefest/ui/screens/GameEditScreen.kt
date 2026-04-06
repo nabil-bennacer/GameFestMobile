@@ -22,6 +22,7 @@ fun GameEditScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val publisherList by viewModel.publisherList.collectAsState()
+    val gameTypes by viewModel.gameTypes.collectAsState()
 
     LaunchedEffect(gameId) {
         viewModel.loadGame(gameId)
@@ -44,6 +45,7 @@ fun GameEditScreen(
         GameEntryBody(
             gameUiState = viewModel.gameUiState,
             publishers = publisherList,
+            gameTypes = gameTypes,
             onGameValueChange = viewModel::updateUiState,
             onSaveClick = {
                 coroutineScope.launch {
