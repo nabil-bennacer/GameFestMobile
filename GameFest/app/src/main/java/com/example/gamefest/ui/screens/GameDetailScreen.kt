@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.gamefest.ui.viewmodels.GameDetailViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -79,6 +80,18 @@ fun GameDetailScreen(
                     .fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                if (!currentGame.imageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = currentGame.imageUrl,
+                        contentDescription = "Image du jeu ${currentGame.name}",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(250.dp)
+                            .padding(bottom = 8.dp),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                }
+
                 Text(
                     text = "Type de jeu : ${currentGame.type}",
                     style = MaterialTheme.typography.titleMedium,
@@ -90,11 +103,22 @@ fun GameDetailScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("👥 Nombre de joueurs max :${currentGame.maxPlayers}")
+                        Text("👥 Nombre de joueurs max : ${currentGame.maxPlayers}")
                         Text("🎂 Âge minimum : ${currentGame.minAge} ans et +")
                     }
                 }
 
+                if (!currentGame.description.isNullOrBlank()) {
+                    Text(
+                        text = "Description",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = currentGame.description,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
         } ?: run {
             // Pendant les quelques millisecondes où "game" est null, on affiche un rond de chargement

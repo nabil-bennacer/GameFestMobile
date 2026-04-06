@@ -120,7 +120,7 @@ fun FestivalDialog(
     var startDate by remember { mutableStateOf(festival?.startDate ?: "") }
     var endDate by remember { mutableStateOf(festival?.endDate ?: "") }
 
-    var tableCount by remember { mutableStateOf("1") }
+    var tableCount by remember { mutableStateOf(festival?.tablesCount?.toString() ?: "1") }
 
     var selectedOption by remember { mutableStateOf(PriceZoneOption.STANDARD) }
     var expanded by remember { mutableStateOf(false) }
