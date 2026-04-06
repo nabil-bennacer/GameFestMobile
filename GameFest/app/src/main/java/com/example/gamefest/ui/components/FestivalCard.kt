@@ -14,22 +14,22 @@ import com.example.gamefest.data.local.entity.FestivalEntity
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-fun formatDateString(dateString: String?): String {
-    if (dateString.isNullOrEmpty()) return "?"
-    if (dateString.contains("/")) return dateString // Déjà formatée
+fun formatDisplayDate(dateString: String?): String {
+    if (dateString.isNullOrEmpty()) return "Date inconnue"
+    if (dateString.contains("/")) return dateString // Déjà formaté
+
     return try {
-        // Parse le format "bizarre" ISO de Node.js
-        val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
-        val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE)
+        // Gère le format ISO de Prisma : 2025-12-25T00:00:00.000Z
+        val parser = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US)
+        val formatter = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.FRANCE)
         val date = parser.parse(dateString)
-        if (date != null) formatter.format(date) else dateString
+        date?.let { formatter.format(it) } ?: dateString
     } catch (e: Exception) {
+        // Repli sur le format court au cas où : 2025-12-25
         try {
-            // Parse le format court YYYY-MM-DD
-            val parser2 = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val formatter2 = SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE)
-            val date2 = parser2.parse(dateString)
-            if (date2 != null) formatter2.format(date2) else dateString
+            val parser2 = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            val formatter2 = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.FRANCE)
+            formatter2.format(parser2.parse(dateString)!!)
         } catch (e2: Exception) {
             dateString
         }
@@ -71,7 +71,7 @@ fun FestivalCard(
                 }
                 if (festival.startDate != null || festival.endDate != null) {
                     Text(
-                        text = "Du ${festival.startDate ?: "?"} au ${festival.endDate ?: "?"}",
+                        text = "Du ${formatDisplayDate(festival.startDate ) ?: "?"} au ${formatDisplayDate(festival.endDate) ?: "?"}",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }

@@ -161,9 +161,12 @@ fun MainAppScreen(
                     }
 
                     is FestivalDetailDestination -> NavEntry(destination) {
+                        val currentUser by authViewModel.currentUser.collectAsState()
+
                         FestivalDetailScreen(
                             festivalId = destination.festivalId,
                             festivalName = destination.festivalName,
+                            userRole = currentUser?.role,
                             onBackClick = {
                                 backStack.removeAt(backStack.lastIndex)
                             },

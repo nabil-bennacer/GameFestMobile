@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +23,7 @@ import com.example.gamefest.ui.viewmodels.FestivalDetailViewModel
 fun FestivalDetailScreen(
     festivalId: Int,
     festivalName: String,
+    userRole: String? = null,
     onBackClick: () -> Unit,
     onReserveClick: () -> Unit = {}
 ) {
@@ -49,7 +51,19 @@ fun FestivalDetailScreen(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
             )
+        },
+        floatingActionButton = {
+            if (userRole == "ADMIN" || userRole == "SUPER_ORGANISATOR") {
+                ExtendedFloatingActionButton(
+                    onClick = onReserveClick,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text("Réserver des tables") }
+                )
+            }
         }
+
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -57,13 +71,6 @@ fun FestivalDetailScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            Button(
-                onClick = onReserveClick,
-                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
-            ) {
-                Text("Réserver")
-            }
-
             Text(
                 text = "Zones de prix",
                 style = MaterialTheme.typography.headlineMedium,
@@ -92,6 +99,9 @@ fun PriceZoneDetailCard(zoneWithDetails: PriceZoneWithDetails) {
     val zone = zoneWithDetails.priceZone
     val tableTypes = zoneWithDetails.tableTypes
 
+    val totalTables = tableTypes.sumOf { it.nbTotal.toInt() }
+    val availableTables = tableTypes.sumOf { it.nbAvailable.toInt() }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -113,42 +123,31 @@ fun PriceZoneDetailCard(zoneWithDetails: PriceZoneWithDetails) {
                     color = MaterialTheme.colorScheme.primary
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text(
-                text = "Types de tables :",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.secondary
-            )
-
-            tableTypes.forEach { type ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text(text = type.name, fontWeight = FontWeight.Medium)
-                        Text(
-                            text = "Joueurs max: ${type.nbTotalPlayer}",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            text = "Disponibles: ${type.nbAvailable.toInt()} / ${type.nbTotal.toInt()}",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Tables disponibles :",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = "$availableTables / $totalTables",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (availableTables > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                )
             }
 
             if (zoneWithDetails.mapZones.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = "Zones associées : ${zoneWithDetails.mapZones.joinToString { it.name }}",
                     style = MaterialTheme.typography.bodySmall,
