@@ -92,4 +92,14 @@ interface GameFestApiService {
 
     @DELETE("users/admin/{id}")
     suspend fun deleteUser(@Path("id") id: Int): Response<Unit>
+
+    // Reservations
+    @GET("reservations/all")
+    suspend fun getAllReservations(): Response<List<ReservationDto>>
+
+    @GET("reservations/festival/{festivalId}")
+    suspend fun getReservationsByFestival(@Path("festivalId") festivalId: Int): Response<List<ReservationDto>>
+
+    @POST("reservations/add")
+    suspend fun createReservation(@Body reservation: ReservationDto): Response<ReservationDto>
 }

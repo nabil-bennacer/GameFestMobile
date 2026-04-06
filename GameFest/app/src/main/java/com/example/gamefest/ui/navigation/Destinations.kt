@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.EventNote
 import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.serialization.Serializable
 
@@ -12,11 +13,13 @@ import kotlinx.serialization.Serializable
 enum class TopLevelDestination(
     val label: String,
     val icon: ImageVector,
-    val contentDescription: String
+    val contentDescription: String,
+    val requiresAdmin: Boolean = false
 ) {
     FESTIVALS("Festivals", Icons.Default.Event, "Liste des festivals"),
     PUBLISHERS("Éditeurs", Icons.Default.Business, "Liste des éditeurs"),
     GAMES("Tous les Jeux", Icons.Default.Casino, "Liste de tous les jeux"),
+    RESERVATIONS("Réservations", Icons.Default.EventNote, "Liste des réservations", requiresAdmin = true),
     PROFILE("Profil", Icons.Default.Person, "Mon Profil")
 }
 
@@ -49,3 +52,6 @@ data class GameEntryDestination(val preselectedPublisherId: Int? = null)
 
 @Serializable
 data class GameEditDestination(val gameId: Int)
+
+@Serializable
+data class ReservationEntryDestination(val festivalId: Int? = null)

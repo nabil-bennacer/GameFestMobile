@@ -9,5 +9,6 @@ data class FestivalEntity(
     val name: String,
     val location: String?,
     val startDate: String?,
-    val endDate: String?
+    val endDate: String?,
+    val tablesCount: Int
 )

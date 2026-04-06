@@ -15,9 +15,11 @@ import com.example.gamefest.data.local.entity.*
         FestivalEntity::class,
         PriceZoneEntity::class,
         TableTypeEntity::class,
-        MapZoneEntity::class
+        MapZoneEntity::class,
+        ReservationEntity::class,
+        ZoneReservationEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class GameFestDatabase : RoomDatabase() {
@@ -27,6 +29,7 @@ abstract class GameFestDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun festivalDao(): FestivalDao
     abstract fun priceZoneDao(): PriceZoneDao
+    abstract fun reservationDao(): ReservationDao
 
     companion object {
         @Volatile

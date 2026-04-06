@@ -51,11 +51,15 @@ fun MainAppScreen(
     Scaffold(
         bottomBar = {
             if (currentDestination is TopLevelDestination) {
+                val userRole = currentUser?.role
+                val isAdmin = userRole == "ADMIN" || userRole == "SUPER_ORGANISATOR"
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.primary
                 ) {
-                    TopLevelDestination.entries.forEach { destination ->
+                    TopLevelDestination.entries
+                        .filter { !it.requiresAdmin || isAdmin }
+                        .forEach { destination ->
                         NavigationBarItem(
                             selected = currentDestination == destination,
                             onClick = {
@@ -123,6 +127,14 @@ fun MainAppScreen(
                         )
                     }
 
+                    TopLevelDestination.RESERVATIONS -> NavEntry(destination) {
+                        ReservationListScreen(
+                            onAddClick = {
+                                backStack.add(ReservationEntryDestination())
+                            }
+                        )
+                    }
+
                     TopLevelDestination.PROFILE -> NavEntry(destination) {
                         if (currentUser == null) {
                             LoginScreen(
@@ -153,6 +165,9 @@ fun MainAppScreen(
                             festivalName = destination.festivalName,
                             onBackClick = {
                                 backStack.removeAt(backStack.lastIndex)
+                            },
+                            onReserveClick = {
+                                backStack.add(ReservationEntryDestination(festivalId = destination.festivalId))
                             }
                         )
                     }
@@ -241,6 +256,13 @@ fun MainAppScreen(
                     is GameEditDestination -> NavEntry(destination) {
                         GameEditScreen(
                             gameId = destination.gameId,
+                            onNavigateUp = { backStack.removeAt(backStack.lastIndex) }
+                        )
+                    }
+
+                    is ReservationEntryDestination -> NavEntry(destination) {
+                        ReservationEntryScreen(
+                            festivalId = destination.festivalId,
                             onNavigateUp = { backStack.removeAt(backStack.lastIndex) }
                         )
                     }

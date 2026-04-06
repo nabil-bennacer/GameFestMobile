@@ -5,6 +5,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
@@ -12,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -78,11 +82,11 @@ fun FestivalScreen(
             FestivalDialog(
                 festival = festivalToEdit,
                 onDismiss = { showDialog = false },
-                onConfirm = { name, location, start, end, option ->
+                onConfirm = { name, location, start, end, tables, option ->
                     if (festivalToEdit == null) {
-                        viewModel.addFestival(name, location, start, end, option)
+                        viewModel.addFestival(name, location, start, end, tables, option)
                     } else {
-                        viewModel.updateFestival(festivalToEdit!!.id, name, location, start, end, option)
+                        viewModel.updateFestival(festivalToEdit!!.id, name, location, start, end, tables, option)
                     }
                     showDialog = false
                 }
@@ -96,12 +100,15 @@ fun FestivalScreen(
 fun FestivalDialog(
     festival: FestivalEntity?,
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String, String, PriceZoneOption) -> Unit
+    onConfirm: (String, String, String, String, Int, PriceZoneOption) -> Unit
 ) {
     var name by remember { mutableStateOf(festival?.name ?: "") }
     var location by remember { mutableStateOf(festival?.location ?: "") }
     var startDate by remember { mutableStateOf(festival?.startDate ?: "") }
     var endDate by remember { mutableStateOf(festival?.endDate ?: "") }
+
+    var tableCount by remember { mutableStateOf("1") }
+
     var selectedOption by remember { mutableStateOf(PriceZoneOption.STANDARD) }
     var expanded by remember { mutableStateOf(false) }
 
@@ -138,13 +145,15 @@ fun FestivalDialog(
             Column(
                 modifier = Modifier
                     .padding(16.dp)
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
                     text = if (festival == null) "Ajouter un Festival" else "Modifier le Festival",
                     style = MaterialTheme.typography.headlineSmall
                 )
+
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -157,7 +166,19 @@ fun FestivalDialog(
                     label = { Text("Lieu") },
                     modifier = Modifier.fillMaxWidth()
                 )
-                
+
+                OutlinedTextField(
+                    value = tableCount,
+                    onValueChange = {
+                        if (it.isEmpty() || it.all { char -> char.isDigit() }) tableCount = it
+                    },
+                    label = { Text("Nombre de tables") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                // ----------------------------------------------
+
                 OutlinedTextField(
                     value = startDate,
                     onValueChange = { },
@@ -233,15 +254,24 @@ fun FestivalDialog(
                 }
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
                         Text("Annuler")
                     }
                     Button(
-                        onClick = { onConfirm(name, location, startDate, endDate, selectedOption) },
-                        enabled = name.isNotBlank()
+                        onClick = {
+                            onConfirm(
+                                name,
+                                location,
+                                startDate,
+                                endDate,
+                                tableCount.toIntOrNull() ?: 1,
+                                selectedOption
+                            )
+                        },
+                        enabled = name.isNotBlank() && location.isNotBlank() && startDate.isNotBlank() && endDate.isNotBlank()
                     ) {
                         Text("Confirmer")
                     }

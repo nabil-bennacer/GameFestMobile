@@ -20,6 +20,7 @@ interface AppContainer {
     val userRepository: UserRepository
     val festivalRepository: FestivalRepository
     val priceZoneRepository: PriceZoneRepository
+    val reservationRepository: ReservationRepository
     fun clearCookies()
 }
 
@@ -87,5 +88,9 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
 
     override val priceZoneRepository: PriceZoneRepository by lazy {
         PriceZoneRepositoryImpl(database.priceZoneDao(), retrofitService)
+    }
+
+    override val reservationRepository: ReservationRepository by lazy {
+        ReservationRepositoryImpl(database.reservationDao(), retrofitService)
     }
 }

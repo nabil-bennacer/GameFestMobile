@@ -1,0 +1,15 @@
+package com.example.gamefest.data.remote.dto
+
+import com.google.gson.annotations.SerializedName
+
+data class ReservationDto(
+    @SerializedName("reservation_id") val reservationId: Int = 0,
+    @SerializedName("game_publisher_id") val gamePublisherId: Int?,
+    @SerializedName("festival_id") val festivalId: Int,
+    val status: String = "NOT_CONTACTED",
+    @SerializedName("invoice_status") val invoiceStatus: String = "NOT_INVOICED",
+    @SerializedName("is_publisher_presenting") val isPublisherPresenting: Boolean = false,
+    val comments: String? = null,
+    val zones: List<ZoneReservationDto>? = null,
+    val tables: List<ZoneReservationDto>? = null
+)

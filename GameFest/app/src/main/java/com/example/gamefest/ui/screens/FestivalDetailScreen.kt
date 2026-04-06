@@ -22,7 +22,8 @@ import com.example.gamefest.ui.viewmodels.FestivalDetailViewModel
 fun FestivalDetailScreen(
     festivalId: Int,
     festivalName: String,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onReserveClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as GameFestApplication
@@ -56,6 +57,13 @@ fun FestivalDetailScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
+            Button(
+                onClick = onReserveClick,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+            ) {
+                Text("Réserver")
+            }
+
             Text(
                 text = "Zones de prix",
                 style = MaterialTheme.typography.headlineMedium,
