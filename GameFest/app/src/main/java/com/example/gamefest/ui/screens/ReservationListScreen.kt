@@ -19,6 +19,7 @@ import com.example.gamefest.ui.viewmodels.ReservationListViewModel
 @Composable
 fun ReservationListScreen(
     viewModel: ReservationListViewModel = viewModel(factory = ReservationListViewModel.Factory),
+    userRole: String? = null,
     onAddClick: () -> Unit = {}
 ) {
     val reservations by viewModel.reservations.collectAsState()
@@ -33,8 +34,10 @@ fun ReservationListScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddClick) {
-                Icon(Icons.Default.Add, contentDescription = "Nouvelle réservation")
+            if (userRole == "ADMIN" || userRole == "SUPER_ORGANISATOR") {
+                FloatingActionButton(onClick = onAddClick) {
+                    Icon(Icons.Default.Add, contentDescription = "Nouvelle Réservation")
+                }
             }
         }
     ) { paddingValues ->

@@ -129,6 +129,7 @@ fun MainAppScreen(
 
                     TopLevelDestination.RESERVATIONS -> NavEntry(destination) {
                         ReservationListScreen(
+                            userRole = currentUser?.role,
                             onAddClick = {
                                 backStack.add(ReservationEntryDestination())
                             }

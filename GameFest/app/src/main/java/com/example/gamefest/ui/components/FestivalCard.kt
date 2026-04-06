@@ -11,6 +11,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.gamefest.data.local.entity.FestivalEntity
+import java.text.SimpleDateFormat
+import java.util.Locale
+
+fun formatDateString(dateString: String?): String {
+    if (dateString.isNullOrEmpty()) return "?"
+    if (dateString.contains("/")) return dateString // Déjà formatée
+    return try {
+        // Parse le format "bizarre" ISO de Node.js
+        val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+        val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE)
+        val date = parser.parse(dateString)
+        if (date != null) formatter.format(date) else dateString
+    } catch (e: Exception) {
+        try {
+            // Parse le format court YYYY-MM-DD
+            val parser2 = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val formatter2 = SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE)
+            val date2 = parser2.parse(dateString)
+            if (date2 != null) formatter2.format(date2) else dateString
+        } catch (e2: Exception) {
+            dateString
+        }
+    }
+}
 
 @Composable
 fun FestivalCard(
