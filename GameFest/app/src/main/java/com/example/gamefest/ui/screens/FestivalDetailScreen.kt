@@ -30,6 +30,7 @@ fun FestivalDetailScreen(
     val context = LocalContext.current
     val application = context.applicationContext as GameFestApplication
     val viewModel: FestivalDetailViewModel = viewModel(
+        key = "festival_detail_$festivalId",
         factory = FestivalDetailViewModel.provideFactory(
             application.container.priceZoneRepository,
             application.container.festivalRepository,
@@ -38,6 +39,11 @@ fun FestivalDetailScreen(
     )
 
     val priceZones by viewModel.priceZones.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
+    LaunchedEffect(festivalId) {
+        viewModel.refreshPriceZones()
+    }
 
     Scaffold(
         topBar = {
@@ -78,7 +84,11 @@ fun FestivalDetailScreen(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            if (priceZones.isEmpty()) {
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (priceZones.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("Aucune zone de prix définie pour ce festival.")
                 }

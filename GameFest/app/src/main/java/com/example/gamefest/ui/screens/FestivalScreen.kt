@@ -115,14 +115,16 @@ fun FestivalDialog(
     onDismiss: () -> Unit,
     onConfirm: (String, String, String, String, Int, PriceZoneOption) -> Unit
 ) {
-    var name by remember { mutableStateOf(festival?.name ?: "") }
-    var location by remember { mutableStateOf(festival?.location ?: "") }
-    var startDate by remember { mutableStateOf(festival?.startDate ?: "") }
-    var endDate by remember { mutableStateOf(festival?.endDate ?: "") }
+    val festivalKey = festival?.id
 
-    var tableCount by remember { mutableStateOf(festival?.tablesCount?.toString() ?: "1") }
+    var name by remember(festivalKey) { mutableStateOf(festival?.name ?: "") }
+    var location by remember(festivalKey) { mutableStateOf(festival?.location ?: "") }
+    var startDate by remember(festivalKey) { mutableStateOf(festival?.startDate ?: "") }
+    var endDate by remember(festivalKey) { mutableStateOf(festival?.endDate ?: "") }
 
-    var selectedOption by remember { mutableStateOf(PriceZoneOption.STANDARD) }
+    var tableCount by remember(festivalKey) { mutableStateOf(festival?.tablesCount?.toString() ?: "1") }
+
+    var selectedOption by remember(festivalKey) { mutableStateOf(PriceZoneOption.STANDARD) }
     var expanded by remember { mutableStateOf(false) }
 
     val context = LocalContext.current

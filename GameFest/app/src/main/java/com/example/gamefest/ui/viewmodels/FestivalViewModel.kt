@@ -69,6 +69,8 @@ class FestivalViewModel(
             
             if (createdFestival != null) {
                 Log.d("FestivalVM", "Festival created: ${createdFestival.id}")
+                // Ensure local cache has zones for the newly created festival.
+                priceZoneRepository.refreshPriceZones(createdFestival.id)
                 festivalRepository.refreshFestivals()
             } else {
                 Log.e("FestivalVM", "Failed to create festival")

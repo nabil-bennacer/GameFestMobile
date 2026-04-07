@@ -8,7 +8,10 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.gamefest.data.local.entity.PriceZoneWithDetails
 import com.example.gamefest.data.repository.FestivalRepository
 import com.example.gamefest.data.repository.PriceZoneRepository
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -19,6 +22,9 @@ class FestivalDetailViewModel(
     private val festivalId: Int
 ) : ViewModel() {
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
     val priceZones: StateFlow<List<PriceZoneWithDetails>> = repository.getPriceZonesForFestival(festivalId)
         .stateIn(
             scope = viewModelScope,
@@ -26,16 +32,23 @@ class FestivalDetailViewModel(
             initialValue = emptyList()
         )
 
-    init {
-        refreshPriceZones()
-    }
-
     fun refreshPriceZones() {
         viewModelScope.launch {
-            // Refresh festivals first — the response contains embedded priceZones with tableTypes
-            festivalRepository.refreshFestivals()
-            // Then refresh price zones specifically for this festival
-            repository.refreshPriceZones(festivalId)
+            _isLoading.value = true
+            try {
+               
+                festivalRepository.refreshFestivals()
+               
+                repository.refreshPriceZones(festivalId)
+
+        
+                if (repository.getPriceZonesForFestival(festivalId).first().isEmpty()) {
+                    delay(400)
+                    repository.refreshPriceZones(festivalId)
+                }
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
