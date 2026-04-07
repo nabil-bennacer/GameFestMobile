@@ -11,6 +11,12 @@ data class ReservationDto(
     @SerializedName("invoice_status") val invoiceStatus: String = "PENDING",
     @SerializedName("is_publisher_presenting") val isPublisherPresenting: Boolean = false,
     val comments: String? = null,
+    val publisher: ReservationPublisherDto? = null,
     val zones: List<ZoneReservationDto>? = null,
     val games: List<FestivalGameDto>? = null
+)
+
+data class ReservationPublisherDto(
+    val id: Int,
+    val name: String
 )

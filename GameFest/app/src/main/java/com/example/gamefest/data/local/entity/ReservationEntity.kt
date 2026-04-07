@@ -9,6 +9,7 @@ data class ReservationEntity(
     val id: Int,
     val festivalId: Int,
     val publisherId: Int,
+    val publisherName: String?,
     val status: String,
     val invoiceStatus: String,
     val isPublisherPresenting: Boolean,

@@ -7,5 +7,6 @@ import kotlinx.coroutines.flow.Flow
 interface ReservationRepository {
     fun getAllReservations(): Flow<List<ReservationWithZones>>
     suspend fun refreshReservations()
-    suspend fun saveReservation(reservationDto: ReservationDto)
+    suspend fun saveReservation(reservationDto: ReservationDto): Boolean
+    suspend fun deleteReservation(reservationId: Int): Boolean
 }

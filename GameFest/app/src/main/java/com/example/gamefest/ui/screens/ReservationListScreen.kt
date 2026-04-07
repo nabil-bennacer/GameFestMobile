@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +24,8 @@ fun ReservationListScreen(
     onAddClick: () -> Unit = {}
 ) {
     val reservations by viewModel.reservations.collectAsState()
+    val pzDetails by viewModel.priceZonesWithDetails.collectAsState()
+    var reservationToDelete by remember { mutableStateOf<Int?>(null) }
 
     Scaffold(
         topBar = {
@@ -58,16 +61,47 @@ fun ReservationListScreen(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(reservations) { reservationWithZones ->
-                    val pzDetails by viewModel.priceZonesWithDetails.collectAsState()
+                items(items = reservations, key = { it.reservation.id }) { reservationWithZones ->
                     ReservationCard(
                         reservationWithZones = reservationWithZones,
-                        publisherName = viewModel.getPublisherName(reservationWithZones.reservation.publisherId),
-                        priceZonesWithDetails = pzDetails
+                        publisherName = reservationWithZones.reservation.publisherName
+                            ?: viewModel.getPublisherName(reservationWithZones.reservation.publisherId),
+                        canDelete = (userRole == "ADMIN" || userRole == "SUPER_ORGANISATOR"),
+                        onDeleteClick = { reservationToDelete = reservationWithZones.reservation.id },
+                        priceZonesWithDetails = pzDetails,
+                        getGameName = viewModel::getGameName,
+                        getMapZoneName = { mapZoneId -> viewModel.getMapZone(mapZoneId)?.name ?: "Zone plan inconnue" },
+                        getMapZonePriceZoneName = { mapZoneId, fallbackPriceZoneId ->
+                            val mapZone = viewModel.getMapZone(mapZoneId)
+                            viewModel.getPriceZoneName(mapZone?.priceZoneId ?: fallbackPriceZoneId)
+                        }
                     )
                 }
             }
         }
+    }
+
+    if (reservationToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { reservationToDelete = null },
+            title = { Text("Supprimer la réservation") },
+            text = { Text("Voulez-vous vraiment supprimer cette réservation ? Cette action est irréversible.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteReservation(reservationToDelete!!)
+                        reservationToDelete = null
+                    }
+                ) {
+                    Text("Supprimer", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { reservationToDelete = null }) {
+                    Text("Annuler")
+                }
+            }
+        )
     }
 }
 
@@ -75,10 +109,16 @@ fun ReservationListScreen(
 private fun ReservationCard(
     reservationWithZones: ReservationWithZones,
     publisherName: String,
-    priceZonesWithDetails: List<com.example.gamefest.data.local.entity.PriceZoneWithDetails>
+    canDelete: Boolean,
+    onDeleteClick: () -> Unit,
+    priceZonesWithDetails: List<com.example.gamefest.data.local.entity.PriceZoneWithDetails>,
+    getGameName: (Int) -> String,
+    getMapZoneName: (Int?) -> String,
+    getMapZonePriceZoneName: (Int?, Int?) -> String
 ) {
     val reservation = reservationWithZones.reservation
     val zones = reservationWithZones.zones
+    val games = reservationWithZones.games
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -90,20 +130,31 @@ private fun ReservationCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Réservation #${reservation.id}",
+                    text = "Réservation",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                AssistChip(
-                    onClick = {},
-                    label = { Text(reservation.status.replace("_", " ")) }
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    AssistChip(
+                        onClick = {},
+                        label = { Text(reservation.status.replace("_", " ")) }
+                    )
+                    if (canDelete) {
+                        IconButton(onClick = onDeleteClick) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Supprimer la réservation",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "📦 $publisherName",
+                text = publisherName,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium
             )
@@ -116,7 +167,7 @@ private fun ReservationCard(
                 zones.forEach { zone ->
                     val zoneName = priceZonesWithDetails.find { it.priceZone.id == zone.priceZoneId }?.priceZone?.name ?: "Zone #${zone.priceZoneId}"
                     Text(
-                        text = "🎯 $zoneName : ${zone.tableCount} table(s)",
+                        text = "$zoneName : ${zone.tableCount} table(s)",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -129,6 +180,33 @@ private fun ReservationCard(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
+            }
+
+            if (games.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Jeux placés",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+
+                games.forEach { game ->
+                    val displayGameName = game.gameName ?: getGameName(game.gameId)
+                    val displayMapZoneName = game.mapZoneName ?: getMapZoneName(game.mapZoneId)
+                    Text(
+                        text = "$displayGameName - $displayMapZoneName (${getMapZonePriceZoneName(game.mapZoneId, game.mapZonePriceZoneId)})",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = "${game.allocatedTables} table(s), ${game.copyCount} exemplaire(s)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
             }
         }
     }

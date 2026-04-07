@@ -9,5 +9,10 @@ data class ReservationWithZones(
         parentColumn = "id",
         entityColumn = "reservationId"
     )
-    val zones: List<ZoneReservationEntity>
+    val zones: List<ZoneReservationEntity>,
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "reservationId"
+    )
+    val games: List<ReservationGameEntity>
 )

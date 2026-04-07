@@ -36,6 +36,7 @@ fun FestivalScreen(
     val festivalList by viewModel.festivals.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var festivalToEdit by remember { mutableStateOf<FestivalEntity?>(null) }
+    var festivalToDelete by remember { mutableStateOf<FestivalEntity?>(null) }
     val isAdmin = userRole == "ADMIN" || userRole == "SUPER_ORGANISATOR"
 
     Scaffold(
@@ -73,7 +74,7 @@ fun FestivalScreen(
                         showDialog = true
                     },
                     onDeleteClick = {
-                        viewModel.deleteFestival(festival.id)
+                        festivalToDelete = festival
                     },
                     onClick = {
                         onFestivalClick(festival.id, festival.name)
@@ -102,6 +103,37 @@ fun FestivalScreen(
                         )
                     }
                     showDialog = false
+                }
+            )
+        }
+
+        if (festivalToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { festivalToDelete = null },
+                title = { Text("Supprimer le festival") },
+                text = {
+                    Text(
+                        "Voulez-vous vraiment supprimer le festival \"${festivalToDelete?.name}\" ? " +
+                            "Toutes les réservations associées seront également supprimées."
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val festivalId = festivalToDelete?.id
+                            festivalToDelete = null
+                            if (festivalId != null) {
+                                viewModel.deleteFestival(festivalId)
+                            }
+                        }
+                    ) {
+                        Text("Supprimer", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { festivalToDelete = null }) {
+                        Text("Annuler")
+                    }
                 }
             )
         }

@@ -13,6 +13,7 @@ import com.example.gamefest.data.remote.dto.PriceZoneRequest
 import com.example.gamefest.data.remote.dto.TableTypeRequest
 import com.example.gamefest.data.repository.FestivalRepository
 import com.example.gamefest.data.repository.PriceZoneRepository
+import com.example.gamefest.data.repository.ReservationRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -27,7 +28,8 @@ enum class PriceZoneOption(val label: String, val id: Int) {
 
 class FestivalViewModel(
     private val festivalRepository: FestivalRepository,
-    private val priceZoneRepository: PriceZoneRepository
+    private val priceZoneRepository: PriceZoneRepository,
+    private val reservationRepository: ReservationRepository
 ) : ViewModel() {
 
     val festivals: StateFlow<List<FestivalEntity>> = festivalRepository.getAllFestivals()
@@ -104,9 +106,14 @@ class FestivalViewModel(
         }
     }
 
-    fun deleteFestival(id: Int) {
+    fun deleteFestival(id: Int, onComplete: (Boolean) -> Unit = {}) {
         viewModelScope.launch {
-            festivalRepository.deleteFestival(id)
+            val deleted = festivalRepository.deleteFestival(id)
+            if (deleted) {
+                festivalRepository.refreshFestivals()
+                reservationRepository.refreshReservations()
+            }
+            onComplete(deleted)
         }
     }
 
@@ -116,7 +123,8 @@ class FestivalViewModel(
                 val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as GameFestApplication)
                 FestivalViewModel(
                     application.container.festivalRepository,
-                    application.container.priceZoneRepository
+                    application.container.priceZoneRepository,
+                    application.container.reservationRepository
                 )
             }
         }

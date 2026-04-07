@@ -14,6 +14,7 @@ import com.example.gamefest.data.remote.dto.*
 import com.example.gamefest.data.repository.*
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -44,6 +45,9 @@ class ReservationEntryViewModel(
     private val gameRepository: GameRepository,
     initialFestivalId: Int? = null
 ) : ViewModel() {
+
+    private val _isSaving = MutableStateFlow(false)
+    val isSaving: StateFlow<Boolean> = _isSaving
 
     var details by mutableStateOf(ReservationDetails(festivalId = initialFestivalId?.toString() ?: ""))
         private set
@@ -150,6 +154,18 @@ class ReservationEntryViewModel(
             }
         }
 
+    val totalReservedTables: Float
+        get() = details.selectedZones.sumOf { (it.tableCount.toIntOrNull() ?: 0).toDouble() }.toFloat()
+
+    val totalPlacedTables: Float
+        get() = details.selectedGames
+            .filter { it.mapZoneId.isNotBlank() }
+            .sumOf { (it.allocatedTables.toFloatOrNull() ?: 0f).toDouble() }
+            .toFloat()
+
+    val hasPlacementOverflow: Boolean
+        get() = totalPlacedTables > totalReservedTables
+
     val isFormValid: Boolean
         get() {
             if (details.publisherId.isBlank() || details.festivalId.isBlank()) return false
@@ -159,13 +175,17 @@ class ReservationEntryViewModel(
             val gamesValid = details.selectedGames.all {
                 it.gameId.isNotBlank() && it.allocatedTables.isNotBlank()
             }
-            return zonesValid && gamesValid
+            return zonesValid && gamesValid && !hasPlacementOverflow
         }
 
-    fun saveReservation() {
-        if (!isFormValid) return
+    fun saveReservation(onComplete: (Boolean) -> Unit = {}) {
+        if (!isFormValid || _isSaving.value) {
+            onComplete(false)
+            return
+        }
 
         viewModelScope.launch {
+            _isSaving.value = true
             val publisherIdInt = details.publisherId.toInt()
 
             val dto = ReservationDto(
@@ -192,9 +212,13 @@ class ReservationEntryViewModel(
                 }
             )
 
-            reservationRepository.saveReservation(dto)
-            // Rafraîchir les données pour mettre à jour les tables restantes
-            priceZoneRepository.refreshPriceZones(details.festivalId.toInt())
+            val saved = reservationRepository.saveReservation(dto)
+            if (saved) {
+                // Rafraîchir les données pour mettre à jour les tables restantes
+                priceZoneRepository.refreshPriceZones(details.festivalId.toInt())
+            }
+            _isSaving.value = false
+            onComplete(saved)
         }
     }
 

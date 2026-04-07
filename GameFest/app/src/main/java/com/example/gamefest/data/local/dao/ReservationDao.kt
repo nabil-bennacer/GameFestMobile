@@ -2,6 +2,7 @@ package com.example.gamefest.data.local.dao
 
 import androidx.room.*
 import com.example.gamefest.data.local.entity.ReservationEntity
+import com.example.gamefest.data.local.entity.ReservationGameEntity
 import com.example.gamefest.data.local.entity.ReservationWithZones
 import com.example.gamefest.data.local.entity.ZoneReservationEntity
 import kotlinx.coroutines.flow.Flow
@@ -30,8 +31,14 @@ interface ReservationDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertZoneReservations(zones: List<ZoneReservationEntity>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertReservationGames(games: List<ReservationGameEntity>)
+
     @Query("DELETE FROM zone_reservations WHERE reservationId = :reservationId")
     suspend fun deleteZonesByReservationId(reservationId: Int)
+
+    @Query("DELETE FROM reservation_games WHERE reservationId = :reservationId")
+    suspend fun deleteGamesByReservationId(reservationId: Int)
 
     @Query("DELETE FROM reservations WHERE id = :id")
     suspend fun deleteReservationById(id: Int)
@@ -41,4 +48,7 @@ interface ReservationDao {
 
     @Query("DELETE FROM zone_reservations")
     suspend fun deleteAllZones()
+
+    @Query("DELETE FROM reservation_games")
+    suspend fun deleteAllGames()
 }

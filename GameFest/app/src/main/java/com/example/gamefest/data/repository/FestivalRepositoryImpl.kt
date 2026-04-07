@@ -79,12 +79,18 @@ class FestivalRepositoryImpl(
         }
     }
 
-    override suspend fun deleteFestival(id: Int) {
-        dao.deleteFestivalById(id)
+    override suspend fun deleteFestival(id: Int): Boolean {
         try {
-            api.deleteFestival(id)
+            val response = api.deleteFestival(id)
+            if (response.isSuccessful) {
+                dao.deleteFestivalById(id)
+                return true
+            }
+            Log.e("FestivalRepository", "Delete failed: ${response.code()} ${response.errorBody()?.string()}")
+            return false
         } catch (e: Exception) {
             Log.e("FestivalRepository", "Error deleting festival from remote", e)
+            return false
         }
     }
 

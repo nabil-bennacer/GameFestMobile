@@ -32,6 +32,7 @@ fun ReservationEntryScreen(
     val publishers by viewModel.publishers.collectAsState()
     val festivals by viewModel.festivals.collectAsState()
     val allGames by viewModel.allGames.collectAsState()
+    val isSaving by viewModel.isSaving.collectAsState()
 
     Scaffold(
         topBar = {
@@ -90,6 +91,15 @@ fun ReservationEntryScreen(
             }
             TextButton(onClick = { viewModel.addGame() }, modifier = Modifier.fillMaxWidth()) { Text("+ Placer un jeu") }
 
+            if (viewModel.hasPlacementOverflow) {
+                Text(
+                    text = "Attention: vous placez ${String.format("%.1f", viewModel.totalPlacedTables)} table(s) de jeux alors que la réservation couvre ${String.format("%.1f", viewModel.totalReservedTables)} table(s).",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
             HorizontalDivider()
 
 
@@ -102,13 +112,16 @@ fun ReservationEntryScreen(
 
             Button(
                 onClick = {
-                    viewModel.saveReservation()
-                    onNavigateUp()
+                    viewModel.saveReservation { success ->
+                        if (success) {
+                            onNavigateUp()
+                        }
+                    }
                 },
-                enabled = viewModel.isFormValid,
+                enabled = viewModel.isFormValid && !isSaving,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Confirmer la réservation")
+                Text(if (isSaving) "Enregistrement..." else "Confirmer la réservation")
             }
 
             Spacer(modifier = Modifier.height(16.dp))

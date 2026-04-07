@@ -20,6 +20,15 @@ import com.example.gamefest.GameFestApplication
 import com.example.gamefest.data.local.entity.PriceZoneWithDetails
 import com.example.gamefest.ui.viewmodels.FestivalDetailViewModel
 
+data class PlacedGameDisplay(
+    val publisherName: String,
+    val gameName: String,
+    val mapZoneId: Int?,
+    val mapZoneName: String,
+    val allocatedTables: Float,
+    val copyCount: Int
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FestivalDetailScreen(
@@ -36,12 +45,14 @@ fun FestivalDetailScreen(
         factory = FestivalDetailViewModel.provideFactory(
             application.container.priceZoneRepository,
             application.container.festivalRepository,
+            application.container.reservationRepository,
             festivalId
         )
     )
 
     val priceZones by viewModel.priceZones.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val reservations by viewModel.reservationsForFestival.collectAsState()
 
     var showMapZoneDialog by remember { mutableStateOf(false) }
     var selectedPriceZoneIdForMapZone by remember { mutableStateOf<Int?>(null) }
@@ -103,9 +114,30 @@ fun FestivalDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(priceZones) { zoneWithDetails ->
+                        val mapZonesById = zoneWithDetails.mapZones.associateBy { it.id }
+                        val zoneMapIds = mapZonesById.keys
+                        val placedGames = reservations.flatMap { reservationWithZones ->
+                            val publisherName = reservationWithZones.reservation.publisherName
+                                ?: "Éditeur #${reservationWithZones.reservation.publisherId}"
+                            reservationWithZones.games
+                                .filter { it.mapZoneId != null && zoneMapIds.contains(it.mapZoneId) }
+                                .map { game ->
+                                    val fallbackMapZoneName = mapZonesById[game.mapZoneId]?.name ?: "Zone plan #${game.mapZoneId}"
+                                    PlacedGameDisplay(
+                                        publisherName = publisherName,
+                                        gameName = game.gameName ?: "Jeu #${game.gameId}",
+                                        mapZoneId = game.mapZoneId,
+                                        mapZoneName = game.mapZoneName ?: fallbackMapZoneName,
+                                        allocatedTables = game.allocatedTables,
+                                        copyCount = game.copyCount
+                                    )
+                                }
+                        }
+
                         PriceZoneDetailCard(
                             zoneWithDetails = zoneWithDetails,
                             userRole = userRole,
+                            placedGames = placedGames,
                             onAddMapZoneClick = {
                                 selectedPriceZoneIdForMapZone = zoneWithDetails.priceZone.id
                                 val totalZoneTables = zoneWithDetails.tableTypes.sumOf { it.nbTotal.toInt() }
@@ -190,6 +222,7 @@ fun MapZoneDialog(onDismiss: () -> Unit, maxTables: Int, onConfirm: (String, Int
 fun PriceZoneDetailCard(
     zoneWithDetails: PriceZoneWithDetails,
     userRole: String?,
+    placedGames: List<PlacedGameDisplay>,
     onAddMapZoneClick: () -> Unit
 ) {
     val zone = zoneWithDetails.priceZone
@@ -257,11 +290,27 @@ fun PriceZoneDetailCard(
                             Text(text = "• ${mapZone.name}", style = MaterialTheme.typography.bodyMedium)
                             Text(text = "$mapZoneTables tables", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                         }
+
+                        val gamesInMapZone = placedGames.filter { it.mapZoneId == mapZone.id }
+                        if (gamesInMapZone.isNotEmpty()) {
+                            gamesInMapZone.forEach { game ->
+                                Text(
+                                    text = "   ${game.gameName} - ${game.publisherName}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "   ${game.allocatedTables} table(s), ${game.copyCount} exemplaire(s)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 }
             }
 
-            if (userRole == "ADMIN" || userRole == "SUPER_ORGANISATOR" || userRole == "ORGANISATOR") {
+            if (userRole == "ADMIN" || userRole == "SUPER_ORGANISATOR") {
                 Spacer(modifier = Modifier.height(12.dp))
                 TextButton(onClick = onAddMapZoneClick, modifier = Modifier.align(Alignment.End)) {
                     Text("+ Ajouter une zone plan")

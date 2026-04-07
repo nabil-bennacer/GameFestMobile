@@ -17,9 +17,10 @@ import com.example.gamefest.data.local.entity.*
         TableTypeEntity::class,
         MapZoneEntity::class,
         ReservationEntity::class,
-        ZoneReservationEntity::class
+        ZoneReservationEntity::class,
+        ReservationGameEntity::class
     ],
-    version = 5,
+    version = 7,
     exportSchema = false
 )
 abstract class GameFestDatabase : RoomDatabase() {

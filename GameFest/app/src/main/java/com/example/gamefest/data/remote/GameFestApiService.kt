@@ -101,7 +101,22 @@ interface GameFestApiService {
     suspend fun getReservationsByFestival(@Path("festivalId") festivalId: Int): Response<List<ReservationDto>>
 
     @POST("reservations/add")
-    suspend fun createReservation(@Body reservation: ReservationDto): Response<ReservationDto>
+    suspend fun createReservation(@Body reservation: ReservationCreateRequest): Response<ApiResponse<ReservationDto>>
+
+    @POST("reservations/{id}/games")
+    suspend fun addReservationGames(
+        @Path("id") reservationId: Int,
+        @Body request: AddReservationGamesRequest
+    ): Response<ApiResponse<ReservationDto>>
+
+    @POST("reservations/game/{gameId}/place")
+    suspend fun placeReservationGame(
+        @Path("gameId") festivalGameId: Int,
+        @Body request: PlaceGameRequest
+    ): Response<ApiResponse<FestivalGameDto>>
+
+    @DELETE("reservations/{id}")
+    suspend fun deleteReservation(@Path("id") reservationId: Int): Response<ApiResponse<Any>>
 
     @POST("map_zones")
     suspend fun createMapZone(@Body mapZone: MapZoneCreateDto): Response<MapZoneDto>
