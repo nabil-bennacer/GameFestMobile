@@ -119,6 +119,10 @@ private fun ReservationCard(
     val reservation = reservationWithZones.reservation
     val zones = reservationWithZones.zones
     val games = reservationWithZones.games
+    val zonePriceById = priceZonesWithDetails.associate { it.priceZone.id to it.priceZone.tablePrice }
+    val reservationPrice = zones.sumOf { zone ->
+        (zonePriceById[zone.priceZoneId] ?: 0.0) * zone.tableCount
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -176,6 +180,12 @@ private fun ReservationCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "Total : ${zones.sumOf { it.tableCount }} table(s)",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Montant : ${String.format("%.2f €", reservationPrice)}",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary

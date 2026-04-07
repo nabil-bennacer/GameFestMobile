@@ -33,6 +33,7 @@ fun ReservationEntryScreen(
     val publishers by viewModel.publishers.collectAsState()
     val festivals by viewModel.festivals.collectAsState()
     val allGames by viewModel.allGames.collectAsState()
+    val reservationsForFestival by viewModel.reservationsForSelectedFestival.collectAsState()
     val isSaving by viewModel.isSaving.collectAsState()
     val snackBarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -75,12 +76,12 @@ fun ReservationEntryScreen(
 
             viewModel.details.selectedZones.forEachIndexed { index, zone ->
                 val zoneId = zone.priceZoneId.toIntOrNull()
-                val availableTables = zoneId?.let { viewModel.getAvailableTables(it) } ?: 0
+                val availableTables = zoneId?.let { viewModel.getAvailableTablesForDraft(it, excludeIndex = index) } ?: 0
                 val totalTables = zoneId?.let { viewModel.getTotalTables(it) } ?: 0
                 ZoneBlock(
                     index = index, zone = zone, priceZonesWithDetails = viewModel.priceZonesWithDetails,
                     getAvailabilityForZone = { priceZoneId ->
-                        viewModel.getAvailableTables(priceZoneId) to viewModel.getTotalTables(priceZoneId)
+                        viewModel.getAvailableTablesForDraft(priceZoneId, excludeIndex = index) to viewModel.getTotalTables(priceZoneId)
                     },
                     availableTables = availableTables,
                     totalTables = totalTables,
@@ -211,6 +212,11 @@ private fun ZoneBlock(
 
 @Composable
 private fun GameBlock(index: Int, gameSelection: GameSelection, allGames: List<GameEntity>, mapZones: List<MapZoneEntity>, onGameChanged: (GameSelection) -> Unit, onRemove: () -> Unit) {
+    val selectedMapZone = mapZones.find { it.id.toString() == gameSelection.mapZoneId }
+    val mapZoneCapacity = selectedMapZone?.let { it.smallTables + it.largeTables + it.cityTables }
+    val requestedTables = gameSelection.allocatedTables.toFloatOrNull() ?: 0f
+    val exceedsMapZoneCapacity = selectedMapZone != null && mapZoneCapacity != null && requestedTables > mapZoneCapacity
+
     Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -230,12 +236,26 @@ private fun GameBlock(index: Int, gameSelection: GameSelection, allGames: List<G
                 OutlinedTextField(
                     value = gameSelection.allocatedTables,
                     onValueChange = { onGameChanged(gameSelection.copy(allocatedTables = it)) },
-                    label = { Text("Tables (ex: 0.5)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f), singleLine = true
+                    label = { Text("Tables (ex: 1)") },
+                    isError = exceedsMapZoneCapacity,
+                    supportingText = if (selectedMapZone != null && mapZoneCapacity != null) {
+                        { Text("Capacité zone plan: $mapZoneCapacity table(s)") }
+                    } else null,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f), singleLine = true
                 )
                 OutlinedTextField(
                     value = gameSelection.copyCount,
                     onValueChange = { onGameChanged(gameSelection.copy(copyCount = it.filter { c -> c.isDigit() })) },
                     label = { Text("Exemplaires") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f), singleLine = true
+                )
+            }
+
+            if (exceedsMapZoneCapacity) {
+                Text(
+                    text = "Attention: vous placez $requestedTables table(s) dans une zone plan limitée à $mapZoneCapacity table(s).",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }

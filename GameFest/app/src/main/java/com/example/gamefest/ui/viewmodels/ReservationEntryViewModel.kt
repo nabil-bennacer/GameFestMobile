@@ -90,6 +90,24 @@ class ReservationEntryViewModel(
             .sumOf { it.tableCount }
     }
 
+    fun getDraftReservedTables(priceZoneId: Int, excludeIndex: Int? = null): Int {
+        return details.selectedZones
+            .mapIndexedNotNull { index, zone ->
+                if (excludeIndex != null && index == excludeIndex) return@mapIndexedNotNull null
+                val zoneId = zone.priceZoneId.toIntOrNull() ?: return@mapIndexedNotNull null
+                if (zoneId != priceZoneId) return@mapIndexedNotNull null
+                zone.tableCount.toIntOrNull() ?: 0
+            }
+            .sum()
+    }
+
+    fun getAvailableTablesForDraft(priceZoneId: Int, excludeIndex: Int? = null): Int {
+        val total = getTotalTables(priceZoneId)
+        val alreadyReserved = getReservedTables(priceZoneId)
+        val inCurrentForm = getDraftReservedTables(priceZoneId, excludeIndex)
+        return (total - alreadyReserved - inCurrentForm).coerceAtLeast(0)
+    }
+
     fun getTotalTables(priceZoneId: Int): Int {
         val zone = priceZonesWithDetails.find { it.priceZone.id == priceZoneId }
         return zone?.tableTypes?.sumOf { it.nbTotal.toInt() } ?: 0
