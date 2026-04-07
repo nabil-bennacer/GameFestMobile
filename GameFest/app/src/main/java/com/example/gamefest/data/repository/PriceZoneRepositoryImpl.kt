@@ -5,6 +5,7 @@ import com.example.gamefest.data.local.dao.PriceZoneDao
 import com.example.gamefest.data.local.entity.PriceZoneWithDetails
 import com.example.gamefest.data.mapper.toEntity
 import com.example.gamefest.data.remote.GameFestApiService
+import com.example.gamefest.data.remote.dto.MapZoneCreateDto
 import com.example.gamefest.data.remote.dto.PriceZoneDto
 import com.example.gamefest.data.remote.dto.PriceZoneRequest
 import kotlinx.coroutines.flow.Flow
@@ -82,6 +83,25 @@ class PriceZoneRepositoryImpl(
             }
         } catch (e: Exception) {
             Log.e("PriceZoneRepo", "Error deleting price zone", e)
+        }
+    }
+
+    override suspend fun addMapZone(festivalId: Int, priceZoneId: Int, name: String, tablesCount: Int) {
+        val dto = MapZoneCreateDto(
+            festivalId = festivalId,
+            priceZoneId = priceZoneId,
+            name = name,
+            smallTables = tablesCount
+        )
+        try {
+            val response = api.createMapZone(dto)
+            if (response.isSuccessful) {
+                refreshPriceZones(festivalId)
+            } else {
+                Log.e("PriceZoneRepo", "Create map zone failed: ${response.code()} ${response.errorBody()?.string()}")
+            }
+        } catch (e: Exception) {
+            Log.e("PriceZoneRepo", "Error creating map zone", e)
         }
     }
 }

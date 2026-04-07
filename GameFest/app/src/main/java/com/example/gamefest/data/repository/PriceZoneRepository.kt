@@ -11,4 +11,7 @@ interface PriceZoneRepository {
     suspend fun createPriceZone(request: PriceZoneRequest)
     suspend fun updatePriceZone(id: Int, updateMap: Map<String, Any>)
     suspend fun deletePriceZone(id: Int)
+
+    suspend fun addMapZone(festivalId: Int, priceZoneId: Int, name: String, tablesCount: Int)
 }
+

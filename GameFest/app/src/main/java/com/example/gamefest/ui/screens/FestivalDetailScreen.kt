@@ -3,6 +3,7 @@ package com.example.gamefest.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -12,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gamefest.GameFestApplication
@@ -41,6 +43,10 @@ fun FestivalDetailScreen(
     val priceZones by viewModel.priceZones.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
+    var showMapZoneDialog by remember { mutableStateOf(false) }
+    var selectedPriceZoneIdForMapZone by remember { mutableStateOf<Int?>(null) }
+    var selectedPriceZoneRemainingTables by remember { mutableStateOf<Int?>(null) }
+
     LaunchedEffect(festivalId) {
         viewModel.refreshPriceZones()
     }
@@ -51,7 +57,7 @@ fun FestivalDetailScreen(
                 title = { Text(festivalName) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
+                        Icon(Icons.Default.ArrowBack, contentDescription = null)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -97,16 +103,95 @@ fun FestivalDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(priceZones) { zoneWithDetails ->
-                        PriceZoneDetailCard(zoneWithDetails = zoneWithDetails)
+                        PriceZoneDetailCard(
+                            zoneWithDetails = zoneWithDetails,
+                            userRole = userRole,
+                            onAddMapZoneClick = {
+                                selectedPriceZoneIdForMapZone = zoneWithDetails.priceZone.id
+                                val totalZoneTables = zoneWithDetails.tableTypes.sumOf { it.nbTotal.toInt() }
+                                val alreadyAssigned = zoneWithDetails.mapZones.sumOf { it.smallTables + it.largeTables + it.cityTables }
+                                selectedPriceZoneRemainingTables = (totalZoneTables - alreadyAssigned).coerceAtLeast(0)
+                                showMapZoneDialog = true
+                            }
+                        )
                     }
                 }
             }
         }
     }
+
+    if (showMapZoneDialog && selectedPriceZoneIdForMapZone != null) {
+        MapZoneDialog(
+            onDismiss = { showMapZoneDialog = false },
+            maxTables = selectedPriceZoneRemainingTables ?: 0,
+            onConfirm = { name, tables ->
+                viewModel.addMapZone(selectedPriceZoneIdForMapZone!!, name, tables)
+                showMapZoneDialog = false
+            }
+        )
+    }
 }
 
 @Composable
-fun PriceZoneDetailCard(zoneWithDetails: PriceZoneWithDetails) {
+fun MapZoneDialog(onDismiss: () -> Unit, maxTables: Int, onConfirm: (String, Int) -> Unit) {
+    var name by remember { mutableStateOf("") }
+    var tablesCount by remember { mutableStateOf("1") }
+    val tablesValue = tablesCount.toIntOrNull() ?: 0
+    val exceedsCapacity = tablesValue > maxTables
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Ajouter une zone plan") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nom (ex: Zone Famille)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = tablesCount,
+                    onValueChange = { if (it.isEmpty() || it.all { c -> c.isDigit() }) tablesCount = it },
+                    label = { Text("Nombre de tables") },
+                    supportingText = { Text("Maximum autorisé: $maxTables") },
+                    isError = exceedsCapacity,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                if (exceedsCapacity) {
+                    Text(
+                        text = "Le nombre de tables dépasse la capacité disponible de la zone tarifaire.",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(name, tablesCount.toIntOrNull() ?: 1) },
+                enabled = name.isNotBlank() && tablesCount.isNotBlank() && !exceedsCapacity && tablesValue > 0
+            ) {
+                Text("Ajouter")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Annuler")
+            }
+        }
+    )
+}
+
+@Composable
+fun PriceZoneDetailCard(
+    zoneWithDetails: PriceZoneWithDetails,
+    userRole: String?,
+    onAddMapZoneClick: () -> Unit
+) {
     val zone = zoneWithDetails.priceZone
     val tableTypes = zoneWithDetails.tableTypes
 
@@ -158,12 +243,29 @@ fun PriceZoneDetailCard(zoneWithDetails: PriceZoneWithDetails) {
             }
 
             if (zoneWithDetails.mapZones.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Zones associées : ${zoneWithDetails.mapZones.joinToString { it.name }}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "Zones Plans (Répartition) :",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.secondary
                 )
+
+                Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    zoneWithDetails.mapZones.forEach { mapZone ->
+                        val mapZoneTables = mapZone.smallTables + mapZone.largeTables + mapZone.cityTables
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(text = "• ${mapZone.name}", style = MaterialTheme.typography.bodyMedium)
+                            Text(text = "$mapZoneTables tables", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            if (userRole == "ADMIN" || userRole == "SUPER_ORGANISATOR" || userRole == "ORGANISATOR") {
+                Spacer(modifier = Modifier.height(12.dp))
+                TextButton(onClick = onAddMapZoneClick, modifier = Modifier.align(Alignment.End)) {
+                    Text("+ Ajouter une zone plan")
+                }
             }
         }
     }

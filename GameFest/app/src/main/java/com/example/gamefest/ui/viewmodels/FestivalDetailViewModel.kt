@@ -32,6 +32,11 @@ class FestivalDetailViewModel(
             initialValue = emptyList()
         )
 
+    fun addMapZone(priceZoneId: Int, name: String, tablesCount: Int) {
+        viewModelScope.launch {
+            repository.addMapZone(festivalId, priceZoneId, name, tablesCount)
+        }
+    }
     fun refreshPriceZones() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -51,6 +56,7 @@ class FestivalDetailViewModel(
             }
         }
     }
+
 
     fun deletePriceZone(id: Int) {
         viewModelScope.launch {

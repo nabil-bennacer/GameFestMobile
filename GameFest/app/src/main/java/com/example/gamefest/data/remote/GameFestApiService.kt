@@ -102,4 +102,7 @@ interface GameFestApiService {
 
     @POST("reservations/add")
     suspend fun createReservation(@Body reservation: ReservationDto): Response<ReservationDto>
+
+    @POST("map_zones")
+    suspend fun createMapZone(@Body mapZone: MapZoneCreateDto): Response<MapZoneDto>
 }
