@@ -116,6 +116,10 @@ fun FestivalDetailScreen(
                     items(priceZones) { zoneWithDetails ->
                         val mapZonesById = zoneWithDetails.mapZones.associateBy { it.id }
                         val zoneMapIds = mapZonesById.keys
+                        val reservedTables = reservations
+                            .flatMap { it.zones }
+                            .filter { it.priceZoneId == zoneWithDetails.priceZone.id }
+                            .sumOf { it.tableCount }
                         val placedGames = reservations.flatMap { reservationWithZones ->
                             val publisherName = reservationWithZones.reservation.publisherName
                                 ?: "Éditeur #${reservationWithZones.reservation.publisherId}"
@@ -137,6 +141,7 @@ fun FestivalDetailScreen(
                         PriceZoneDetailCard(
                             zoneWithDetails = zoneWithDetails,
                             userRole = userRole,
+                            reservedTablesCount = reservedTables,
                             placedGames = placedGames,
                             onAddMapZoneClick = {
                                 selectedPriceZoneIdForMapZone = zoneWithDetails.priceZone.id
@@ -222,6 +227,7 @@ fun MapZoneDialog(onDismiss: () -> Unit, maxTables: Int, onConfirm: (String, Int
 fun PriceZoneDetailCard(
     zoneWithDetails: PriceZoneWithDetails,
     userRole: String?,
+    reservedTablesCount: Int,
     placedGames: List<PlacedGameDisplay>,
     onAddMapZoneClick: () -> Unit
 ) {
@@ -229,7 +235,7 @@ fun PriceZoneDetailCard(
     val tableTypes = zoneWithDetails.tableTypes
 
     val totalTables = tableTypes.sumOf { it.nbTotal.toInt() }
-    val availableTables = tableTypes.sumOf { it.nbAvailable.toInt() }
+    val availableTables = (totalTables - reservedTablesCount).coerceAtLeast(0)
 
     Card(
         modifier = Modifier.fillMaxWidth(),

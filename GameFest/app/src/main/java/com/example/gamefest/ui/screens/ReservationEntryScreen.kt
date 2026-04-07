@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import com.example.gamefest.data.local.entity.GameEntity
 import com.example.gamefest.data.local.entity.MapZoneEntity
 import com.example.gamefest.data.local.entity.PriceZoneWithDetails
@@ -33,8 +34,16 @@ fun ReservationEntryScreen(
     val festivals by viewModel.festivals.collectAsState()
     val allGames by viewModel.allGames.collectAsState()
     val isSaving by viewModel.isSaving.collectAsState()
+    val snackBarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    val gamesForSelectedPublisher = remember(allGames, viewModel.details.publisherId) {
+        val selectedPublisherId = viewModel.details.publisherId.toIntOrNull()
+        if (selectedPublisherId == null) allGames else allGames.filter { it.publisherId == selectedPublisherId }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackBarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Nouvelle Réservation") },
@@ -65,8 +74,16 @@ fun ReservationEntryScreen(
             Text("Facturation", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
 
             viewModel.details.selectedZones.forEachIndexed { index, zone ->
+                val zoneId = zone.priceZoneId.toIntOrNull()
+                val availableTables = zoneId?.let { viewModel.getAvailableTables(it) } ?: 0
+                val totalTables = zoneId?.let { viewModel.getTotalTables(it) } ?: 0
                 ZoneBlock(
                     index = index, zone = zone, priceZonesWithDetails = viewModel.priceZonesWithDetails,
+                    getAvailabilityForZone = { priceZoneId ->
+                        viewModel.getAvailableTables(priceZoneId) to viewModel.getTotalTables(priceZoneId)
+                    },
+                    availableTables = availableTables,
+                    totalTables = totalTables,
                     canRemove = viewModel.details.selectedZones.size > 1,
                     onZoneChanged = { viewModel.updateZone(index, it) }, onRemove = { viewModel.removeZone(index) }
                 )
@@ -85,7 +102,7 @@ fun ReservationEntryScreen(
             viewModel.details.selectedGames.forEachIndexed { index, gameSelection ->
                 GameBlock(
                     index = index, gameSelection = gameSelection,
-                    allGames = viewModel.filteredGames, mapZones = viewModel.allMapZones,
+                    allGames = gamesForSelectedPublisher, mapZones = viewModel.filteredMapZones,
                     onGameChanged = { viewModel.updateGame(index, it) }, onRemove = { viewModel.removeGame(index) }
                 )
             }
@@ -115,6 +132,10 @@ fun ReservationEntryScreen(
                     viewModel.saveReservation { success ->
                         if (success) {
                             onNavigateUp()
+                        } else {
+                            scope.launch {
+                                snackBarHostState.showSnackbar("Impossible de créer la réservation. Vérifie la capacité des zones tarifaires.")
+                            }
                         }
                     }
                 },
@@ -130,11 +151,18 @@ fun ReservationEntryScreen(
 }
 
 @Composable
-private fun ZoneBlock(index: Int, zone: ZoneSelection, priceZonesWithDetails: List<PriceZoneWithDetails>, canRemove: Boolean, onZoneChanged: (ZoneSelection) -> Unit, onRemove: () -> Unit) {
+private fun ZoneBlock(
+    index: Int,
+    zone: ZoneSelection,
+    priceZonesWithDetails: List<PriceZoneWithDetails>,
+    getAvailabilityForZone: (Int) -> Pair<Int, Int>,
+    availableTables: Int,
+    totalTables: Int,
+    canRemove: Boolean,
+    onZoneChanged: (ZoneSelection) -> Unit,
+    onRemove: () -> Unit
+) {
     val selectedZoneId = zone.priceZoneId.toIntOrNull()
-    val selectedZoneDetails = priceZonesWithDetails.find { it.priceZone.id == selectedZoneId }
-    val availableTables = selectedZoneDetails?.tableTypes?.sumOf { it.nbAvailable.toInt() } ?: 0
-    val totalTables = selectedZoneDetails?.tableTypes?.sumOf { it.nbTotal.toInt() } ?: 0
     val requestedTables = zone.tableCount.toIntOrNull() ?: 0
     val isOverCapacity = selectedZoneId != null && requestedTables > availableTables
 
@@ -152,9 +180,7 @@ private fun ZoneBlock(index: Int, zone: ZoneSelection, priceZonesWithDetails: Li
                 priceZonesWithDetails.map { it.priceZone },
                 { it.id.toString() },
                 { pz ->
-                    val zd = priceZonesWithDetails.find { it.priceZone.id == pz.id }
-                    val avail = zd?.tableTypes?.sumOf { it.nbAvailable.toInt() } ?: 0
-                    val total = zd?.tableTypes?.sumOf { it.nbTotal.toInt() } ?: 0
+                    val (avail, total) = getAvailabilityForZone(pz.id)
                     "${pz.name} (${pz.tablePrice} €) — $avail/$total tables"
                 },
                 { onZoneChanged(zone.copy(priceZoneId = it)) }
@@ -194,7 +220,10 @@ private fun GameBlock(index: Int, gameSelection: GameSelection, allGames: List<G
 
             DropdownSelector("Sélectionner un jeu *", gameSelection.gameId, allGames, { it.id.toString() }, { it.name }, { onGameChanged(gameSelection.copy(gameId = it)) })
 
-            val mapOptions = listOf(Pair("", "Non placé")) + mapZones.map { Pair(it.id.toString(), it.name) }
+            val mapOptions = listOf(Pair("", "Non placé")) + mapZones.map {
+                val availableTables = it.smallTables + it.largeTables + it.cityTables
+                Pair(it.id.toString(), "${it.name} ($availableTables tables dispo)")
+            }
             DropdownSelectorPair("Zone Plan", gameSelection.mapZoneId, mapOptions) { onGameChanged(gameSelection.copy(mapZoneId = it)) }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

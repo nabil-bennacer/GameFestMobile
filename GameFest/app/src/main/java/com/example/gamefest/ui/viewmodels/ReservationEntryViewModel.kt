@@ -15,6 +15,7 @@ import com.example.gamefest.data.repository.*
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -61,6 +62,14 @@ class ReservationEntryViewModel(
     val allGames: StateFlow<List<GameEntity>> = gameRepository.getAllGames()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val reservationsForSelectedFestival: StateFlow<List<ReservationWithZones>> = reservationRepository
+        .getAllReservations()
+        .map { reservations ->
+            val festivalId = details.festivalId.toIntOrNull()
+            if (festivalId == null) emptyList() else reservations.filter { it.reservation.festivalId == festivalId }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val filteredGames: List<GameEntity>
         get() {
             val pubId = details.publisherId.toIntOrNull()
@@ -69,8 +78,16 @@ class ReservationEntryViewModel(
         }
     
     fun getAvailableTables(priceZoneId: Int): Int {
-        val zone = priceZonesWithDetails.find { it.priceZone.id == priceZoneId }
-        return zone?.tableTypes?.sumOf { it.nbAvailable.toInt() } ?: 0
+        val reserved = getReservedTables(priceZoneId)
+        val total = getTotalTables(priceZoneId)
+        return (total - reserved).coerceAtLeast(0)
+    }
+
+    fun getReservedTables(priceZoneId: Int): Int {
+        return reservationsForSelectedFestival.value
+            .flatMap { it.zones }
+            .filter { it.priceZoneId == priceZoneId }
+            .sumOf { it.tableCount }
     }
 
     fun getTotalTables(priceZoneId: Int): Int {
@@ -84,15 +101,28 @@ class ReservationEntryViewModel(
     val allMapZones: List<MapZoneEntity>
         get() = priceZonesWithDetails.flatMap { it.mapZones }
 
+    val filteredMapZones: List<MapZoneEntity>
+        get() {
+            val allowedPriceZoneIds = details.selectedZones.mapNotNull { it.priceZoneId.toIntOrNull() }.toSet()
+            if (allowedPriceZoneIds.isEmpty()) return emptyList()
+            return allMapZones.filter { mapZone ->
+                mapZone.priceZoneId != null && allowedPriceZoneIds.contains(mapZone.priceZoneId)
+            }
+        }
+
     init {
-        viewModelScope.launch { publisherRepository.refreshPublishers() }
+        viewModelScope.launch {
+            publisherRepository.refreshPublishers()
+            gameRepository.refreshGames()
+        }
         viewModelScope.launch { festivalRepository.refreshFestivals() }
-        viewModelScope.launch { gameRepository.refreshGames() }
+        viewModelScope.launch { reservationRepository.refreshReservations() }
         if (initialFestivalId != null) loadPriceZones(initialFestivalId)
     }
 
     fun updatePublisher(publisherId: String) {
         details = details.copy(publisherId = publisherId)
+        viewModelScope.launch { gameRepository.refreshGames() }
     }
 
     fun updateFestival(festivalId: String) {
@@ -102,7 +132,12 @@ class ReservationEntryViewModel(
             selectedGames = emptyList()
         )
         val id = festivalId.toIntOrNull()
-        if (id != null) loadPriceZones(id) else priceZonesWithDetails = emptyList()
+        if (id != null) {
+            viewModelScope.launch { reservationRepository.refreshReservations() }
+            loadPriceZones(id)
+        } else {
+            priceZonesWithDetails = emptyList()
+        }
     }
 
     private fun loadPriceZones(festivalId: Int) {
